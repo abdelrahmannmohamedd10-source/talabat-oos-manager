@@ -1,0 +1,183 @@
+/* Talabat OOS – styles.css */
+:root {
+  --primary:       #FF6200;
+  --primary-light: #FF8533;
+  --primary-dark:  #D94F00;
+  --primary-bg:    #FFF3EC;
+  --bg:      #F5F5F5;
+  --card:    #FFFFFF;
+  --text:    #1A1A1A;
+  --text-2:  #6B7280;
+  --border:  #E5E7EB;
+  --success:    #10B981;
+  --success-bg: #ECFDF5;
+  --warning:    #F59E0B;
+  --warning-bg: #FFFBEB;
+  --error:      #EF4444;
+  --error-bg:   #FEF2F2;
+  --info:       #3B82F6;
+  --r:      12px;
+  --r-sm:   8px;
+  --r-lg:   18px;
+  --r-full: 9999px;
+  --shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  font-family: 'Cairo', system-ui, sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh; overflow-x: hidden;
+}
+
+/* ── Loader ── */
+#globalLoader {
+  position: fixed; inset: 0; background: var(--primary);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 9999; color: white;
+}
+#loaderText { font-size: 12px; margin-top: 8px; opacity: 0.85; }
+.loader-bar-wrap { width:160px; height:4px; background:rgba(255,255,255,0.3); border-radius:var(--r-full); overflow:hidden; margin-top:14px; }
+.loader-bar { height:100%; background:white; border-radius:var(--r-full); animation:animBar 1.2s ease-in-out infinite alternate; }
+@keyframes animBar { from { width:20%; } to { width:90%; } }
+
+/* ── Login ── */
+#loginScreen { display:none; min-height:100vh; align-items:center; justify-content:center; padding:20px; background:var(--primary); }
+#loginScreen.on { display:flex; }
+.login-card { background:white; border-radius:24px; padding:36px 28px; width:100%; max-width:400px; text-align:center; }
+
+#authErrorMsg {
+  display: none; margin-top: 18px;
+  background: var(--error-bg); color: var(--error);
+  border: 1.5px solid var(--error); border-radius: var(--r-sm);
+  padding: 10px 14px; font-size: 12px; font-weight: 700; line-height: 1.6;
+}
+
+/* ── App ── */
+#appScreen { display:none; flex-direction:column; min-height:100vh; }
+#appScreen.on { display:flex; }
+
+/* ── Header ── */
+.app-header { background:white; border-bottom:1px solid var(--border); padding:0 16px; position:sticky; top:0; z-index:200; }
+.header-row { display:flex; align-items:center; justify-content:space-between; height:56px; }
+.brand { display:flex; align-items:center; gap:8px; }
+.brand-icon { width:36px; height:36px; background:var(--primary); color:white; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:900; }
+#headerName { font-size:12px; font-weight:800; background:var(--primary-bg); color:var(--primary); padding:4px 10px; border-radius:var(--r-full); }
+#btnDashTrigger { display:none; background:#0F172A; color:white; border:none; padding:5px 12px; border-radius:20px; font-size:11px; font-weight:800; cursor:pointer; font-family:'Cairo'; }
+
+/* ── Admin Filter Bar ── */
+.admin-filter-bar { display:none; align-items:center; gap:10px; padding:10px 16px; background:var(--primary-bg); border-bottom:1px solid var(--border); }
+.admin-filter-bar.show { display:flex; }
+.admin-user-select { flex:1; padding:8px; border:1.5px solid var(--primary); border-radius:var(--r-sm); font-family:'Cairo'; font-size:12px; }
+
+/* ── Branch Summary Bar ── */
+.branch-summary-bar {
+  background:#1E293B; color:white; padding:10px 16px;
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:12px; font-weight:700;
+}
+.branch-status-tag { background:var(--warning); color:white; padding:3px 10px; border-radius:var(--r-full); font-size:11px; font-weight:900; }
+.branch-status-tag.is-done { background:var(--success); }
+
+/* ── Filter Strip ── */
+.filter-strip { padding:10px 16px; display:flex; gap:8px; flex-wrap:wrap; background:white; border-bottom:1px solid var(--border); }
+.f-select { flex:1; min-width:110px; max-width:180px; padding:8px; border:1.5px solid var(--border); border-radius:var(--r-sm); font-family:'Cairo'; font-size:12px; }
+.btn-clear-filter { padding:6px 12px; border:1px solid var(--border); border-radius:var(--r-sm); background:white; font-size:11px; cursor:pointer; font-family:'Cairo'; white-space:nowrap; }
+.btn-clear-filter:hover { background:var(--bg); }
+
+/* ── Items ── */
+.items-wrap { flex:1; padding:12px 16px 140px; overflow-y:auto; }
+.items-list { display:flex; flex-direction:column; gap:12px; }
+
+#emptyState { display:none; text-align:center; padding:60px 20px; }
+
+/* ── Card ── */
+.icard { background:white; border-radius:var(--r); box-shadow:var(--shadow); border:1.5px solid transparent; overflow:hidden; transition:border-color 0.2s; }
+.ch { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:var(--primary-bg); border-bottom:1px solid var(--border); }
+.ch-date { font-size:11px; color:var(--primary-dark); font-weight:700; }
+.ch-badge { font-size:10px; font-weight:700; padding:2px 8px; border-radius:var(--r-full); }
+.p-not-found { background:var(--error-bg); color:var(--error); }
+.p-active    { background:var(--warning-bg); color:var(--warning); }
+
+.cb { display:flex; flex-direction:column; gap:10px; padding:12px; }
+.cb-info { direction:rtl; width:100%; }
+.cb-chain-badge { font-size:11px; font-weight:800; color:var(--text-2); background:#F1F5F9; padding:3px 8px; border-radius:4px; display:inline-block; margin-bottom:5px; }
+.cb-item-name { font-size:13px; font-weight:800; color:var(--text); background:var(--primary-bg); padding:6px 9px; border-radius:var(--r-sm); margin-bottom:6px; border-right:3px solid var(--primary); }
+.cb-sku { font-size:10px; color:var(--text-2); font-family:monospace; margin-bottom:6px; }
+.cb-img-col { display:flex; align-items:center; justify-content:center; padding:8px; border:1px solid var(--border); border-radius:var(--r-sm); min-height:170px; background:#FAFAFA; width:100%; }
+.center-product-img { max-width:100%; max-height:220px; object-fit:contain; border-radius:var(--r-sm); }
+.cb-actions { direction:rtl; display:flex; flex-direction:column; gap:5px; width:100%; }
+
+/* ── Action Buttons ── */
+.abt { width:100%; padding:8px; border:1.5px solid var(--border); border-radius:var(--r-sm); background:white; font-family:'Cairo'; font-size:11px; font-weight:700; text-align:right; cursor:pointer; display:flex; align-items:center; justify-content:space-between; transition:0.15s; }
+.abt:hover { background:var(--bg); }
+.abt.sel { border-width:2px; border-color:var(--primary); background:var(--primary-bg); }
+
+/* ── Action Input Panel ── */
+.aip { padding:10px 12px; border-top:1px dashed var(--border); background:#FAFAFA; display:none; }
+.aip.show { display:block; animation:slideDown 0.25s ease; }
+@keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+
+.input-text-cap { width:100%; padding:8px 10px; border:1.5px solid var(--border); border-radius:var(--r-sm); font-family:'Cairo'; font-size:12px; margin-bottom:6px; }
+.input-text-cap:focus { outline:none; border-color:var(--primary); }
+
+/* ── Bottom Batch Bar ── */
+.batch-bottom-bar { position:fixed; bottom:0; left:0; right:0; background:white; border-top:2px solid var(--primary); padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; box-shadow:0 -4px 16px rgba(0,0,0,0.1); z-index:300; }
+.btn-batch-submit { flex:1; padding:13px; background:var(--primary); color:white; border:none; border-radius:var(--r-sm); font-family:'Cairo'; font-size:15px; font-weight:900; cursor:pointer; transition:0.2s; }
+.btn-batch-submit:disabled { background:#CBD5E1; cursor:not-allowed; }
+.btn-batch-submit:not(:disabled):hover { background:var(--primary-dark); }
+
+/* ── Admin Dashboard Modal ── */
+#adminDashboardModal { display:none; position:fixed; inset:0; z-index:9998; background:rgba(0,0,0,0.55); align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(2px); }
+#adminDashboardModal.on { display:flex; }
+.dash-box { background:white; border-radius:var(--r-lg); padding:24px; width:100%; max-width:860px; max-height:90vh; overflow-y:auto; box-shadow:0 10px 30px rgba(0,0,0,0.25); }
+.dash-header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:16px; }
+.dash-header h3 { font-weight:900; font-size:16px; }
+.dash-header button { border:none; background:var(--bg); padding:5px 12px; border-radius:var(--r-sm); font-weight:800; cursor:pointer; font-size:14px; }
+.dash-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:16px 0; }
+.dash-kpi { background:var(--bg); padding:12px; border-radius:var(--r-sm); text-align:center; border:1px solid var(--border); }
+@media (max-width:480px) { .dash-grid { grid-template-columns:repeat(2,1fr); } }
+
+/* ── Assign Button ── */
+#btnAssignTrigger { display:none; background:#7C3AED; color:white; border:none; padding:5px 12px; border-radius:20px; font-size:11px; font-weight:800; cursor:pointer; font-family:'Cairo'; }
+
+/* ── Assign Modal ── */
+#assignModal { display:none; position:fixed; inset:0; z-index:9998; background:rgba(0,0,0,0.55); align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(2px); }
+#assignModal.on { display:flex; }
+.assign-box { background:white; border-radius:var(--r-lg); padding:24px; width:100%; max-width:720px; max-height:92vh; overflow-y:auto; box-shadow:0 10px 30px rgba(0,0,0,0.25); }
+
+.assign-stat-pill { background:var(--bg); border:1px solid var(--border); border-radius:var(--r-full); padding:5px 14px; font-size:11px; font-weight:800; display:flex; align-items:center; gap:5px; }
+
+.assign-select { width:100%; padding:6px 8px; border:1.5px solid var(--border); border-radius:var(--r-sm); font-family:'Cairo'; font-size:11px; background:white; cursor:pointer; transition:border-color 0.2s; }
+.assign-select:focus { outline:none; border-color:var(--primary); }
+.assign-select.changed { border-color:#7C3AED; background:#F5F3FF; font-weight:800; color:#7C3AED; }
+
+/* ── Toasts ── */
+#toastWrap { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:6px; pointer-events:none; width:90%; max-width:360px; }
+.toast { padding:10px 14px; border-radius:var(--r-sm); font-size:12px; font-weight:700; color:white; text-align:center; box-shadow:var(--shadow); animation:toastIn 0.3s ease, toastOut 0.3s ease 2.9s; }
+@keyframes toastIn  { from { transform:translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+@keyframes toastOut { from { transform:translateY(0); opacity:1; } to { transform:translateY(20px); opacity:0; } }
+.toast.ok  { background:var(--success); }
+.toast.err { background:var(--error); }
+.toast.inf { background:var(--primary); }
+
+/* ── Branch Summary Modal ── */
+#branchSummaryModal { display:none; position:fixed; inset:0; z-index:9998; background:rgba(0,0,0,0.55); align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(2px); }
+#branchSummaryModal.on { display:flex; }
+.sum-box { background:white; border-radius:var(--r-lg); padding:24px; width:100%; max-width:480px; max-height:90vh; overflow-y:auto; box-shadow:0 10px 30px rgba(0,0,0,0.25); }
+.sum-label { font-size:12px; font-weight:800; margin-bottom:5px; display:block; color:var(--text); }
+.sum-input { width:100%; padding:9px 11px; border:1.5px solid var(--border); border-radius:var(--r-sm); font-family:'Cairo'; font-size:12px; background:white; }
+.sum-input:focus { outline:none; border-color:var(--primary); }
+textarea.sum-input { resize:vertical; }
+
+#btnSummaryTrigger { background:#0F172A; color:white; border:none; padding:5px 12px; border-radius:20px; font-size:11px; font-weight:800; cursor:pointer; font-family:'Cairo'; }
+
+/* ── Responsive desktop layout for cards ── */
+@media (min-width:681px) {
+  .cb { display:grid; grid-template-columns:30% 38% 32%; direction:ltr; gap:0; }
+  .cb-info    { order:3; padding:12px 14px 12px 8px; min-width:0; word-break:break-word; text-align:right; }
+  .cb-img-col { order:2; border-radius:0; border-top:none; border-bottom:none; }
+  .cb-actions { order:1; min-width:0; padding:12px; }
+  .cb-item-name { white-space:normal; word-break:break-word; }
+}

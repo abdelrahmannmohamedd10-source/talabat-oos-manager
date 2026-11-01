@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="referrer" content="no-referrer">
+  <title>Talabat OOS – بوابة الفيدباك</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     GLOBAL LOADER
+════════════════════════════════════════════════════ -->
+<div id="globalLoader">
+  <div style="font-size:52px; margin-bottom:12px;">🛒</div>
+  <div style="font-size:20px; font-weight:900; letter-spacing:1px;">TALABAT OOS</div>
+  <div id="loaderText" style="font-size:12px; margin-top:8px; opacity:0.85;"></div>
+  <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     LOGIN SCREEN
+════════════════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div style="font-size:52px; margin-bottom:12px;">🛒</div>
+    <h1 style="font-size:22px; font-weight:900; margin-bottom:4px;">بوابة الفيدباك</h1>
+    <p style="font-size:12px; color:var(--text-2); margin-bottom:28px;">Talabat OOS Mapping · تسجيل الدخول بحساب Google</p>
+
+    <!-- زر Google Sign-In -->
+    <div id="g_id_onload"
+         data-client_id="397053555500-0kavau822uibedcefps41h4ibg7iueu7.apps.googleusercontent.com"
+         data-callback="handleCredentialResponse"
+         data-auto_select="true"
+         data-cancel_on_tap_outside="false">
+    </div>
+    <div class="g_id_signin"
+         data-type="standard"
+         data-size="large"
+         data-theme="outline"
+         data-text="signin_with"
+         data-shape="rectangular"
+         data-logo_alignment="left"
+         data-width="280">
+    </div>
+
+    <!-- رسالة الخطأ (مخفية بالافتراضي) -->
+    <div id="authErrorMsg"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     APP SCREEN
+════════════════════════════════════════════════════ -->
+<div id="appScreen">
+
+  <!-- ── Header ── -->
+  <header class="app-header">
+    <div class="header-row">
+      <div class="brand">
+        <div class="brand-icon">T</div>
+        <div style="font-weight:900; font-size:14px;">OOS Feedback</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button id="btnDashTrigger"     onclick="openAdminDashboardModal()" style="display:none;">📊 التحليلات</button>
+        <button id="btnAssignTrigger"   onclick="openAssignModal()"         style="display:none;">👥 التوزيع</button>
+        <button id="btnSummaryTrigger"  onclick="showBranchSummaryModal()"  style="display:none;">📋 ملخص</button>
+        <span id="headerName">-</span>
+        <button onclick="doLogout()" style="border:none; background:none; cursor:pointer; font-size:18px;" title="خروج">⬅️</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Admin Filter Bar (المدراء فقط) ── -->
+  <div id="adminFilterBar" class="admin-filter-bar">
+    <span style="font-size:12px; font-weight:800; white-space:nowrap;">👁️ عرض بيانات:</span>
+    <select id="adminUserSelect" class="admin-user-select" onchange="adminLoadSelected()">
+      <option value="__ALL__">— كل أعضاء الفريق —</option>
+    </select>
+    <button onclick="loadData()"
+      style="padding:6px 14px; border:1px solid var(--primary); border-radius:var(--r-sm); background:var(--primary-bg); color:var(--primary); font-weight:800; cursor:pointer; font-size:12px; font-family:'Cairo';">
+      🔄 تحديث
+    </button>
+  </div>
+
+  <!-- ── Branch Summary Bar ── -->
+  <div class="branch-summary-bar">
+    <div>
+      إجمالي: <span id="summaryTotalCount"   style="color:var(--primary-light); font-weight:900;">0</span>
+      &nbsp;·&nbsp;
+      محدّث: <span id="summaryUpdatedCount"  style="color:var(--success); font-weight:900;">0</span>
+      &nbsp;·&nbsp;
+      باقي: <span id="summaryRemainingCount" style="color:var(--warning); font-weight:900;">0</span>
+    </div>
+    <div id="branchStatusTag" class="branch-status-tag">PENDING ⏳</div>
+  </div>
+
+  <!-- ── Filter Strip (4 فلاتر مترابطة) ── -->
+  <div class="filter-strip">
+    <select id="fChainName" class="f-select" onchange="applyFilters()">
+      <option value="">كل Chain Name</option>
+    </select>
+    <select id="fChainId" class="f-select" onchange="applyFilters()">
+      <option value="">كل Chain ID</option>
+    </select>
+    <select id="fVendor" class="f-select" onchange="applyFilters()">
+      <option value="">كل الفروع</option>
+    </select>
+    <select id="fBranch" class="f-select" onchange="applyFilters()">
+      <option value="">كل Vendor IDs</option>
+    </select>
+    <button onclick="clearFilters()" class="btn-clear-filter">✕ مسح</button>
+  </div>
+
+  <!-- ── Items List ── -->
+  <main class="items-wrap">
+    <div id="itemsList" class="items-list"></div>
+    <div id="emptyState">
+      <div style="font-size:52px;">🎉</div>
+      <div style="font-size:16px; font-weight:800; margin-top:10px;">أحسنت! كل العناصر مكتملة</div>
+      <p style="font-size:12px; color:var(--text-2); margin-top:6px;">لا توجد نواقص معلقة بناءً على الفلترة الحالية.</p>
+    </div>
+  </main>
+
+  <!-- ── Batch Bottom Bar ── -->
+  <div class="batch-bottom-bar">
+    <div style="font-size:12px; font-weight:700;">
+      مكتمل: <span id="batchCompletedCount" style="color:var(--primary); font-size:18px; font-weight:900;">0</span>
+      / <span id="batchTotalCount" style="font-size:14px;">0</span>
+    </div>
+    <button class="btn-batch-submit" id="btnBatchSubmit" onclick="submitBatchTasks()" disabled>
+      🚀 إرسال الفيدباك المجمع
+    </button>
+  </div>
+
+</div><!-- end #appScreen -->
+
+<!-- ══════════════════════════════════════════════════
+     ADMIN DASHBOARD MODAL
+════════════════════════════════════════════════════ -->
+<div id="adminDashboardModal">
+  <div class="dash-box">
+
+    <div class="dash-header">
+      <h3>👑 لوحة تحليلات المدير</h3>
+      <button onclick="closeAdminDashboardModal()">✕ إغلاق</button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="dash-grid">
+      <div class="dash-kpi">
+        <div style="font-size:24px; font-weight:900; color:var(--primary);"   id="dashKpiTotal">0</div>
+        <div style="font-size:10px; color:var(--text-2);">الإجمالي</div>
+      </div>
+      <div class="dash-kpi">
+        <div style="font-size:24px; font-weight:900; color:var(--warning);"   id="dashKpiPending">0</div>
+        <div style="font-size:10px; color:var(--text-2);">معلّق</div>
+      </div>
+      <div class="dash-kpi">
+        <div style="font-size:24px; font-weight:900; color:var(--success);"   id="dashKpiCompleted">0</div>
+        <div style="font-size:10px; color:var(--text-2);">مكتمل</div>
+      </div>
+      <div class="dash-kpi">
+        <div style="font-size:24px; font-weight:900; color:var(--info);"      id="dashKpiRate">0%</div>
+        <div style="font-size:10px; color:var(--text-2);">نسبة الإنجاز</div>
+      </div>
+    </div>
+
+    <!-- إحصائيات الفريق -->
+    <h4 style="font-weight:800; font-size:13px; margin-top:16px;">👥 إحصائيات الفريق</h4>
+    <div style="max-height:140px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--r-sm); margin-top:6px;">
+      <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:right;">
+        <thead style="background:var(--bg); position:sticky; top:0;">
+          <tr>
+            <th style="padding:5px 8px;">الموظف</th>
+            <th>معلّق</th>
+            <th>مكتمل</th>
+            <th>نسبة</th>
+          </tr>
+        </thead>
+        <tbody id="dashTeamBody"></tbody>
+      </table>
+    </div>
+
+    <!-- آخر الإجراءات -->
+    <h4 style="font-weight:800; font-size:13px; margin-top:16px;">🕒 آخر الإجراءات (50)</h4>
+    <div style="max-height:170px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--r-sm); margin-top:6px;">
+      <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:right;">
+        <thead style="background:var(--bg); position:sticky; top:0;">
+          <tr>
+            <th style="padding:5px 8px;">الوقت</th>
+            <th>الموظف</th>
+            <th>المنتج</th>
+            <th>الإجراء / القيمة</th>
+          </tr>
+        </thead>
+        <tbody id="dashAuditBody"></tbody>
+      </table>
+    </div>
+
+    <!-- سجل الحضور -->
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:16px; margin-bottom:0;">
+      <h4 style="font-weight:800; font-size:13px;">📸 سجل الحضور (آخر 20)</h4>
+      <button onclick="refreshLoginLogs()" id="btnRefreshLogins"
+        style="background:var(--primary-bg);color:var(--primary);border:1.5px solid var(--primary);border-radius:20px;padding:4px 12px;font-family:'Cairo';font-size:11px;font-weight:800;cursor:pointer;">
+        🔄 تحديث
+      </button>
+    </div>
+    <div style="max-height:170px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--r-sm); margin-top:6px;">
+      <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:right;">
+        <thead style="background:var(--bg); position:sticky; top:0;">
+          <tr>
+            <th style="padding:5px 8px;">الوقت</th>
+            <th>الموظف</th>
+            <th>الموقع</th>
+          </tr>
+        </thead>
+        <tbody id="dashLoginBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     BRANCH SUMMARY MODAL
+════════════════════════════════════════════════════ -->
+<div id="branchSummaryModal" style="display:none">
+  <div class="sum-box">
+
+    <div class="dash-header">
+      <h3>📋 ملخص الزيارة</h3>
+      <button onclick="closeBranchSummaryModal()">✕ إغلاق</button>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:12px;">
+
+      <div>
+        <label class="sum-label">🎯 هدف الزيارة</label>
+        <select id="sumVisitObjective" class="sum-input">
+          <option value="">— اختر —</option>
+          <option>مراجعة المخزون</option>
+          <option>متابعة نواقص</option>
+          <option>تدريب</option>
+          <option>دعم فني</option>
+          <option>أخرى</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="sum-label">📋 إدارة القائمة</label>
+        <select id="sumMenuManagement" class="sum-input">
+          <option value="">— اختر —</option>
+          <option>مكتملة</option>
+          <option>جزئية</option>
+          <option>غير مكتملة</option>
+        </select>
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label class="sum-label">👥 موظفين/شيفت</label>
+          <input type="number" id="sumEmpPerShift" class="sum-input" placeholder="0" min="0">
+        </div>
+        <div style="flex:1;">
+          <label class="sum-label">🛵 رايدرز/شيفت</label>
+          <input type="number" id="sumRiderPerShift" class="sum-input" placeholder="0" min="0">
+        </div>
+      </div>
+
+      <div>
+        <label class="sum-label">🔖 Order ID (اختياري)</label>
+        <input type="text" id="sumOrderId" class="sum-input" placeholder="رقم الطلب لو موجود">
+      </div>
+
+      <div>
+        <label class="sum-label">📝 خطة الإجراءات</label>
+        <textarea id="sumActionsplan" class="sum-input" rows="3" placeholder="الإجراءات اللي اتعملت..."></textarea>
+      </div>
+
+      <div>
+        <label class="sum-label">⚠️ مشاكل الفيندور</label>
+        <textarea id="sumVendorIssue" class="sum-input" rows="2" placeholder="أي مشاكل لاحظتها..."></textarea>
+      </div>
+
+    </div>
+
+    <button id="btnSubmitSummary" onclick="doSubmitBranchSummary()"
+      style="width:100%; margin-top:18px; padding:13px; background:var(--primary); color:white; border:none; border-radius:var(--r-sm); font-family:'Cairo'; font-size:15px; font-weight:900; cursor:pointer;">
+      📤 إرسال ملخص الزيارة
+    </button>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     ASSIGN MODAL
+════════════════════════════════════════════════════ -->
+<div id="assignModal">
+  <div class="assign-box">
+
+    <div class="dash-header">
+      <h3>👥 توزيع المهام على الفريق</h3>
+      <button onclick="closeAssignModal()">✕ إغلاق</button>
+    </div>
+
+    <!-- فلتر بحث -->
+    <div style="margin-bottom:12px;">
+      <input id="assignSearch" type="text" placeholder="🔍 ابحث عن Chain Name أو ID..."
+        oninput="filterAssignRows()"
+        style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;">
+    </div>
+
+    <!-- إحصائيات التوزيع -->
+    <div id="assignStats" style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;"></div>
+
+    <!-- جدول التوزيع -->
+    <div style="max-height:380px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:right;">
+        <thead style="background:var(--bg);position:sticky;top:0;z-index:1;">
+          <tr>
+            <th style="padding:8px 10px;">Chain Name</th>
+            <th style="padding:8px 6px;">Chain ID</th>
+            <th style="padding:8px 6px;color:var(--primary);">T-Champ الحالي</th>
+            <th style="padding:8px 6px;">تغيير إلى</th>
+          </tr>
+        </thead>
+        <tbody id="assignTableBody"></tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button id="btnSaveAssign" onclick="saveAssignments()"
+        style="flex:1;padding:13px;background:var(--primary);color:white;border:none;border-radius:var(--r-sm);font-family:'Cairo';font-size:14px;font-weight:900;cursor:pointer;">
+        💾 حفظ التوزيع
+      </button>
+      <button onclick="closeAssignModal()"
+        style="padding:13px 20px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:13px;font-weight:700;cursor:pointer;">
+        إلغاء
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     TOASTS
+════════════════════════════════════════════════════ -->
+<div id="toastWrap"></div>
+
+<script src="main.js"></script>
+</body>
+</html>
