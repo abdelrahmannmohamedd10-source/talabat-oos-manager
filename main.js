@@ -153,10 +153,10 @@ function handleCredentialResponse(response) {
   callAPI('verifyUserAuth', { email: tokenData.email }, function(err, res) {
     hideLoader();
     if (err || !res) { showAuthError('فشل الاتصال. تحقق من الإنترنت'); return; }
-    if (!res.isAuthorized) { showAuthError('🚫 ' + (res.message || 'هذا الحساب غير مصرح له')); return; }
+    if (res.status !== 'ok') { showAuthError('🚫 ' + (res.message || 'هذا الحساب غير مصرح له')); return; }
 
     clearAuthError();
-    S.user = res.name; S.userEmail = res.email;
+    S.user = res.name; S.userEmail = res.email || tokenData.email;
     S.isOwner = res.isOwner; S.allTeamNames = res.allNames || [];
     writeCache(res);
 
