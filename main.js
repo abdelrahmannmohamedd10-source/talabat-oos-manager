@@ -16,9 +16,11 @@ const db = firebase.firestore();
 const SS_ID = '1zrqSAAIyaNEBN30y0U7rWDDo4hl9O2Xz8QB9p3gRyGw';
 const GVIZ  = `https://docs.google.com/spreadsheets/d/${SS_ID}/gviz/tq?tqx=out:json&sheet=`;
 
-// Master_Database column indices
-const MC = { DATE:0, VENDOR:1, BRANCH_ID:2, ORDER_ID:3, SKU:4, ITEM_NAME:5,
-             STATUS:6, CHAIN_ID:7, CHAIN_NAME:8, PROC_STATUS:11, TCHAMP:12, IMG_URL:13 };
+// Master_Database column indices (col 0 = row number, data starts at col 1)
+const MC = { DATE:1, VENDOR:2, BRANCH_ID:3, ORDER_ID:4, SKU:5,
+             ITEM_NAME_AR:6, ITEM_NAME:7,
+             STATUS:8, CHAIN_ID:9, CHAIN_NAME:10,
+             PROC_STATUS:13, IMG_URL:14, TCHAMP:15 };
 // chains sheet column indices (chains tab)
 const CC = { CHAIN_NAME:0, CHAIN_ID:1, VENDOR_NAME:2, VENDOR_ID:3, TCHAMP_NICK:4 };
 // maping sheet column indices (fallback)
@@ -262,8 +264,8 @@ async function loadOOSItems(filterTchampEmail) {
     const table = await fetchGViz('Master_Database');
     const rows  = gvizRows(table);
 
-    // Show all rows with an item name
-    let filtered = rows.filter(r => r[MC.ITEM_NAME]);
+    // Show all rows with an item name (Arabic or English)
+    let filtered = rows.filter(r => r[MC.ITEM_NAME_AR] || r[MC.ITEM_NAME]);
 
     if (S.user.role === 'tchamp') {
       filtered = filtered.filter(r => S.myChains.includes(String(r[MC.CHAIN_ID])));
@@ -282,7 +284,8 @@ async function loadOOSItems(filterTchampEmail) {
       branchId:  String(r[MC.BRANCH_ID] || ''),
       orderId:   String(r[MC.ORDER_ID]  || ''),
       sku:       String(r[MC.SKU]       || ''),
-      itemName:  String(r[MC.ITEM_NAME] || ''),
+      itemName:  String(r[MC.ITEM_NAME_AR] || r[MC.ITEM_NAME] || ''),
+      itemNameEn:String(r[MC.ITEM_NAME]    || ''),
       status:    String(r[MC.STATUS]    || ''),
       chainId:   String(r[MC.CHAIN_ID]  || ''),
       chainName: String(r[MC.CHAIN_NAME]|| ''),
