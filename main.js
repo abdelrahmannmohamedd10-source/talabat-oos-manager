@@ -10,7 +10,8 @@ const firebaseConfig = {
   appId: "1:313411194103:web:0ec5595c0ece3d27b597f2"
 };
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const db      = firebase.firestore();
+const storage = firebase.storage();
 
 // ── Constants ──
 const SS_ID = '1zrqSAAIyaNEBN30y0U7rWDDo4hl9O2Xz8QB9p3gRyGw';
@@ -27,11 +28,13 @@ const CC = { CHAIN_NAME:0, CHAIN_ID:1, VENDOR_NAME:2, VENDOR_ID:3, TCHAMP_NICK:4
 const MP = { CHAIN_NAME:0, TCHAMP_NICK:1, CHAIN_ID:2, TCHAMP_EMAIL:3, MGR_NAME:5, MGR_EMAIL:6 };
 
 const ACTIONS = [
-  { key:'found',     label:'تم وجوده ✓' },
-  { key:'not_found', label:'مش موجود ✗' },
-  { key:'partial',   label:'موجود جزئي' },
-  { key:'replaced',  label:'استبدال ↔'  },
-  { key:'no_access', label:'مش قادر يدخل ⊘' },
+  { key:'stock_match',  label:'✅ رصيد السيستم = الرصيد الفعلي', input:'camera'   },
+  { key:'stock_diff',   label:'⚠️ رصيد الفعلي ≠ السيستم',        input:'camera'   },
+  { key:'edit_name',    label:'✏️ تعديل اسم المنتج',              input:'text',    ph:'اكتب اسم المنتج الجديد...'  },
+  { key:'edit_barcode', label:'🔢 تعديل الباركود',                input:'text',    ph:'اكتب الباركود الجديد...'    },
+  { key:'edit_sku',     label:'🔑 تعديل الـ SKU',                 input:'text',    ph:'اكتب الـ SKU الجديد...'      },
+  { key:'photo',        label:'📷 صورة',                          input:'camera'   },
+  { key:'note',         label:'📝 ملاحظة',                        input:'textarea', ph:'اكتب ملاحظتك...'            },
 ];
 
 // ── State ──
@@ -377,12 +380,37 @@ function renderItems() {
         <span>${a.label}</span>
       </button>`).join('');
 
-    const noteHtml = (!readOnly && sel) ?
-      `<div class="aip show">
-        <input class="input-text-cap" placeholder="ملاحظة اختيارية"
-          value="${(sel.notes||'').replace(/"/g,'&quot;')}"
-          oninput="updateNote('${item.key}', this.value)">
-      </div>` : '';
+    let noteHtml = '';
+    if (!readOnly && sel) {
+      const act = ACTIONS.find(a => a.key === sel.action);
+      const ph  = act ? (act.ph || '') : '';
+      if (act && act.input === 'camera') {
+        const preview = sel.photoPreview
+          ? `<img src="${sel.photoPreview}" style="max-width:100%;max-height:140px;border-radius:8px;margin-top:6px;display:block;">`
+          : '';
+        noteHtml = `<div class="aip show">
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--text-2);margin-bottom:6px;">📷 صوّر أو ارفع صورة</label>
+          <input type="file" accept="image/*" capture="environment"
+            style="width:100%;padding:8px;border:1.5px dashed var(--border);border-radius:8px;font-family:Cairo;font-size:12px;cursor:pointer;"
+            onchange="capturePhoto('${item.key}', this)">
+          ${preview}
+          <input class="input-text-cap" placeholder="ملاحظة اختيارية" style="margin-top:8px;"
+            value="${(sel.notes||'').replace(/"/g,'&quot;')}"
+            oninput="updateNote('${item.key}', this.value)">
+        </div>`;
+      } else if (act && act.input === 'textarea') {
+        noteHtml = `<div class="aip show">
+          <textarea class="input-text-cap" rows="3" placeholder="${ph}"
+            oninput="updateNote('${item.key}', this.value)">${sel.notes||''}</textarea>
+        </div>`;
+      } else {
+        noteHtml = `<div class="aip show">
+          <input class="input-text-cap" placeholder="${ph || 'اكتب التفاصيل...'}"
+            value="${(sel.notes||'').replace(/"/g,'&quot;')}"
+            oninput="updateNote('${item.key}', this.value)">
+        </div>`;
+      }
+    }
 
     const imgHtml = item.imgUrl
       ? `<div class="cb-img-col"><img class="center-product-img" src="${item.imgUrl}"
@@ -414,13 +442,28 @@ function toggleAction(key, action) {
   if (S.selections[key] && S.selections[key].action === action) {
     delete S.selections[key];
   } else {
-    S.selections[key] = { action, notes: (S.selections[key] && S.selections[key].notes) || '' };
+    const prev = S.selections[key] || {};
+    S.selections[key] = { action, notes: prev.notes || '', photo: null, photoPreview: null };
   }
   renderItems();
 }
 
 function updateNote(key, val) {
   if (S.selections[key]) S.selections[key].notes = val;
+}
+
+function capturePhoto(key, input) {
+  if (!input.files || !input.files.length) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    if (S.selections[key]) {
+      S.selections[key].photo        = file;
+      S.selections[key].photoPreview = e.target.result;
+      renderItems();
+    }
+  };
+  reader.readAsDataURL(file);
 }
 
 // ── SUBMIT FEEDBACK ──
@@ -431,21 +474,33 @@ async function submitBatch() {
     const item = S.items.find(i => i.key === k);
     return Object.assign({}, item, S.selections[k]);
   });
-  const payload = {
-    tchampEmail: S.user.email,
-    tchampName:  S.user.name,
-    date:        today(),
-    items: items.map(i => ({
-      chainId:   i.chainId,   chainName: i.chainName,
-      branchId:  i.branchId, orderId:   i.orderId,
-      sku:       i.sku,       itemName:  i.itemName,
-      action:    i.action,    notes:     i.notes || '',
-    })),
-    submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
-  };
   const btn = document.getElementById('btnBatchSubmit');
   btn.disabled = true; btn.textContent = 'جاري الارسال...';
   try {
+    // Upload photos to Firebase Storage
+    const withPhotos = items.filter(i => i.photo);
+    if (withPhotos.length) {
+      btn.textContent = 'جاري رفع الصور...';
+      await Promise.all(withPhotos.map(async i => {
+        const path = `feedback_photos/${S.user.email}_${Date.now()}_${i.sku}`;
+        const ref  = storage.ref(path);
+        await ref.put(i.photo);
+        i.photoUrl = await ref.getDownloadURL();
+      }));
+    }
+    const payload = {
+      tchampEmail: S.user.email,
+      tchampName:  S.user.name,
+      date:        today(),
+      items: items.map(i => ({
+        chainId:   i.chainId,   chainName: i.chainName,
+        branchId:  i.branchId, orderId:   i.orderId,
+        sku:       i.sku,       itemName:  i.itemName,
+        action:    i.action,    notes:     i.notes    || '',
+        photoUrl:  i.photoUrl  || null,
+      })),
+      submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    };
     await db.collection('feedback').add(payload);
     S.selections = {};
     renderItems();
