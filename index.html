@@ -7,7 +7,6 @@
   <title>Talabat OOS – بوابة الفيدباك</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -28,27 +27,79 @@
   <div class="login-card">
     <div style="font-size:52px; margin-bottom:12px;">🛒</div>
     <h1 style="font-size:22px; font-weight:900; margin-bottom:4px;">بوابة الفيدباك</h1>
-    <p style="font-size:12px; color:var(--text-2); margin-bottom:28px;">Talabat OOS Mapping · تسجيل الدخول بحساب Google</p>
+    <p style="font-size:12px; color:var(--text-2); margin-bottom:24px;">Talabat OOS Mapping</p>
 
-    <!-- زر Google Sign-In -->
-    <div id="g_id_onload"
-         data-client_id="173182605804-k8vd3keq6at9ictaogu1b7n1irmu2mp9.apps.googleusercontent.com"
-         data-callback="handleCredentialResponse"
-         data-auto_select="true"
-         data-cancel_on_tap_outside="false">
-    </div>
-    <div class="g_id_signin"
-         data-type="standard"
-         data-size="large"
-         data-theme="outline"
-         data-text="signin_with"
-         data-shape="rectangular"
-         data-logo_alignment="left"
-         data-width="280">
-    </div>
+    <form onsubmit="handleLoginSubmit(event)">
+      <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" required
+             style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:13px;margin-bottom:10px;direction:ltr;text-align:left;box-sizing:border-box;">
+      <input type="password" id="loginPassword" placeholder="كلمة المرور" required
+             style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:13px;margin-bottom:14px;direction:ltr;text-align:left;box-sizing:border-box;">
+      <button type="submit" id="loginBtn"
+              style="width:100%;padding:13px;background:var(--primary);color:white;border:none;border-radius:var(--r-sm);font-family:'Cairo';font-size:15px;font-weight:900;cursor:pointer;">
+        دخول
+      </button>
+    </form>
 
-    <!-- رسالة الخطأ (مخفية بالافتراضي) -->
     <div id="authErrorMsg"></div>
+  </div>
+</div>
+
+<!-- Change Password Modal -->
+<div id="changePassModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px);">
+  <div style="background:white;border-radius:18px;padding:28px;width:100%;max-width:380px;box-shadow:0 10px 30px rgba(0,0,0,0.25);">
+    <h3 style="font-weight:900;font-size:16px;margin-bottom:6px;text-align:center;">🔑 تغيير كلمة المرور</h3>
+    <p id="changePassNote" style="font-size:12px;color:var(--text-2);text-align:center;margin-bottom:20px;">أول مرة — غيّر كلمة المرور</p>
+    <label style="font-size:12px;font-weight:800;display:block;margin-bottom:5px;">كلمة المرور الحالية</label>
+    <input type="password" id="cpOld" placeholder="123456" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;margin-bottom:10px;direction:ltr;box-sizing:border-box;">
+    <label style="font-size:12px;font-weight:800;display:block;margin-bottom:5px;">كلمة المرور الجديدة</label>
+    <input type="password" id="cpNew" placeholder="6 أحرف على الأقل" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;margin-bottom:10px;direction:ltr;box-sizing:border-box;">
+    <label style="font-size:12px;font-weight:800;display:block;margin-bottom:5px;">تأكيد كلمة المرور الجديدة</label>
+    <input type="password" id="cpConfirm" placeholder="أعد الكتابة" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;margin-bottom:14px;direction:ltr;box-sizing:border-box;">
+    <div id="cpError" style="display:none;background:var(--error-bg);color:var(--error);border:1.5px solid var(--error);border-radius:var(--r-sm);padding:8px 12px;font-size:12px;font-weight:700;margin-bottom:12px;"></div>
+    <button onclick="submitChangePass()" style="width:100%;padding:12px;background:var(--primary);color:white;border:none;border-radius:var(--r-sm);font-family:'Cairo';font-size:14px;font-weight:900;cursor:pointer;margin-bottom:8px;">تغيير وحفظ</button>
+    <button onclick="skipChangePass()" id="cpSkipBtn" style="width:100%;padding:10px;background:var(--bg);color:var(--text-2);border:1px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;cursor:pointer;">تخطي الآن</button>
+  </div>
+</div>
+
+<!-- Users Management Modal -->
+<div id="usersModal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px);">
+  <div style="background:white;border-radius:18px;padding:24px;width:100%;max-width:760px;max-height:92vh;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,0.25);">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px;">
+      <h3 style="font-weight:900;font-size:16px;">👤 إدارة المستخدمين</h3>
+      <button onclick="closeUsersModal()" style="border:none;background:var(--bg);padding:5px 12px;border-radius:var(--r-sm);font-weight:800;cursor:pointer;font-size:14px;">✕ إغلاق</button>
+    </div>
+    <div style="background:var(--bg);border-radius:var(--r-sm);padding:14px;margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:2;min-width:160px;">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">البريد الإلكتروني</label>
+        <input type="email" id="newUserEmail" placeholder="user@example.com" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;box-sizing:border-box;direction:ltr;">
+      </div>
+      <div style="flex:2;min-width:130px;">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">الاسم</label>
+        <input type="text" id="newUserName" placeholder="اسم المستخدم" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;box-sizing:border-box;">
+      </div>
+      <div style="flex:1;min-width:100px;">
+        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">الدور</label>
+        <select id="newUserRole" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;box-sizing:border-box;">
+          <option value="tchamp">موظف</option>
+          <option value="owner">مدير</option>
+        </select>
+      </div>
+      <button onclick="addNewUser()" style="padding:8px 18px;background:var(--primary);color:white;border:none;border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">+ إضافة</button>
+    </div>
+    <div style="overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-sm);">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;text-align:right;">
+        <thead style="background:var(--bg);position:sticky;top:0;">
+          <tr>
+            <th style="padding:8px 10px;">البريد</th>
+            <th style="padding:8px;">الاسم</th>
+            <th style="padding:8px;">الدور</th>
+            <th style="padding:8px;">كلمة المرور</th>
+            <th style="padding:8px;"></th>
+          </tr>
+        </thead>
+        <tbody id="usersTbody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -67,6 +118,7 @@
       <div style="display:flex; gap:8px; align-items:center;">
         <button id="btnDashTrigger"     onclick="openAdminDashboardModal()" style="display:none;">📊 التحليلات</button>
         <button id="btnAssignTrigger"   onclick="openAssignModal()"         style="display:none;">👥 التوزيع</button>
+        <button id="btnUsersTrigger"    onclick="openUsersModal()"          style="display:none;">👤 المستخدمين</button>
         <button id="btnSummaryTrigger"  onclick="showBranchSummaryModal()"  style="display:none;">📋 ملخص</button>
         <span id="headerName">-</span>
         <button onclick="doLogout()" style="border:none; background:none; cursor:pointer; font-size:18px;" title="خروج">⬅️</button>

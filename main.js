@@ -32,23 +32,12 @@ function writeCache(d) {
 }
 function clearCache() { localStorage.removeItem(_SKEY); }
 
-// فك تشفير JWT لاستخراج الإيميل بدون انتظار شبكة
-function parseJwt(token) {
-  try {
-    var base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    var json = decodeURIComponent(
-      atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join('')
-    );
-    return JSON.parse(json);
-  } catch (e) { return null; }
-}
 
 // ==============================================================================
 // 🌐 محرك الاتصالات (POST للثقيل، JSONP للقراءة)
 // ==============================================================================
-var POST_ACTIONS = ['recordUserLogin', 'submitBatchFeedback', 'submitBranchSummary'];
+var POST_ACTIONS = ['recordUserLogin', 'submitBatchFeedback', 'submitBranchSummary',
+                    'loginWithPassword', 'changePassword', 'resetPassword', 'addUser'];
 
 function callAPI(action, payload, callback) {
   payload = payload || {};
@@ -98,6 +87,7 @@ function callAPI(action, payload, callback) {
   var sc  = document.createElement('script');
   sc.id   = cbName;
   sc.src  = API_URL + '?action=' + action +
+            '&email=' + encodeURIComponent(payload.email || S.userEmail || '') +
             '&payload=' + encodeURIComponent(JSON.stringify(payload)) +
             '&callback=' + cbName;
   sc.onerror = function() {
@@ -121,52 +111,173 @@ document.addEventListener('DOMContentLoaded', function() {
 
   var cached = readCache();
 
-  if (cached && cached.isOwner) {
-    // المدير فقط: يدخل تلقائياً لو الكاش صالح (مفيش موقع/صورة مطلوبة منه)
+  if (cached) {
     S.user = cached.name; S.userEmail = cached.email;
-    S.isOwner = true; S.allTeamNames = cached.allNames || [];
-    loadData();
+    S.isOwner = cached.isOwner; S.allTeamNames = cached.allNames || [];
+    if (S.isOwner) {
+      loadData();
+    } else {
+      hideLoader();
+      requestLocationThenSelfie();
+    }
   } else {
-    // الموظف: دايماً يمر بـ Google + موقع + صورة في كل فتح
-    clearCache();           // امسح أي بقايا جلسة سابقة
     hideLoader();
     show('loginScreen');
   }
 });
 
 // ==============================================================================
-// 🔐 تسجيل الدخول (Google OAuth)
+// 🔐 تسجيل الدخول (Email + Password)
 // ==============================================================================
-function handleCredentialResponse(response) {
-  S.currentToken = response.credential;
 
-  // استخراج الإيميل من JWT فوراً بدون انتظار شبكة
-  var tokenData = parseJwt(response.credential);
-  if (!tokenData || !tokenData.email) {
-    showAuthError('تعذر قراءة بيانات الحساب من Google');
-    return;
-  }
+function handleLoginSubmit(e) {
+  e.preventDefault();
+  var email    = (document.getElementById('loginEmail').value    || '').trim().toLowerCase();
+  var password = (document.getElementById('loginPassword').value || '').trim();
+  if (!email || !password) { showAuthError('أدخل البريد وكلمة المرور'); return; }
 
-  showLoader();
-  setLoaderText('جاري التحقق من صلاحيات الدخول...');
+  var btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'جاري التحقق...';
+  clearAuthError();
 
-  callAPI('verifyUserAuth', { email: tokenData.email }, function(err, res) {
-    hideLoader();
-    if (err || !res) { showAuthError('فشل الاتصال. تحقق من الإنترنت'); return; }
-    if (res.status !== 'ok') { showAuthError('🚫 ' + (res.message || 'هذا الحساب غير مصرح له')); return; }
+  callAPI('loginWithPassword', { email: email, password: password }, function(err, res) {
+    btn.disabled = false; btn.textContent = 'دخول';
+    if (err || !res) { showAuthError('فشل الاتصال — تحقق من الإنترنت'); return; }
+    if (res.status !== 'ok') { showAuthError('🚫 ' + (res.message || 'بيانات غير صحيحة')); return; }
 
     clearAuthError();
-    S.user = res.name; S.userEmail = res.email || tokenData.email;
+    S.user = res.name; S.userEmail = res.email || email;
     S.isOwner = res.isOwner; S.allTeamNames = res.allNames || [];
     writeCache(res);
 
-    if (S.isOwner) {
-      // المدير يدخل مباشرة بدون صورة
-      loadData();
+    if (res.isFirstLogin) {
+      openChangePassModal(email, true);
+    } else if (S.isOwner) {
+      hide('loginScreen'); loadData();
     } else {
-      // الموظف: طلب الموقع أولاً ثم الصورة
-      requestLocationThenSelfie();
+      hide('loginScreen'); requestLocationThenSelfie();
     }
+  });
+}
+
+// ── Change Password ────────────────────────────────────────────────────────────
+var _cpEmail = '';
+
+function openChangePassModal(email, isFirst) {
+  _cpEmail = email || S.userEmail;
+  var note    = document.getElementById('changePassNote');
+  var skipBtn = document.getElementById('cpSkipBtn');
+  if (note) note.textContent = isFirst ? 'أول مرة تسجل دخول — غيّر كلمة المرور' : 'تغيير كلمة المرور';
+  if (skipBtn) skipBtn.style.display = isFirst ? 'block' : 'none';
+  clearCpError();
+  ['cpOld','cpNew','cpConfirm'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  var m = document.getElementById('changePassModal');
+  if (m) m.style.display = 'flex';
+}
+
+function closeChangePassModal() {
+  var m = document.getElementById('changePassModal');
+  if (m) m.style.display = 'none';
+}
+
+function skipChangePass() {
+  closeChangePassModal();
+  hide('loginScreen');
+  if (S.isOwner) loadData();
+  else requestLocationThenSelfie();
+}
+
+function submitChangePass() {
+  var oldP = (document.getElementById('cpOld').value     || '').trim();
+  var newP = (document.getElementById('cpNew').value     || '').trim();
+  var conf = (document.getElementById('cpConfirm').value || '').trim();
+  if (!oldP || !newP || !conf) { showCpError('أكمل جميع الحقول'); return; }
+  if (newP !== conf) { showCpError('كلمة المرور الجديدة غير متطابقة'); return; }
+  if (newP.length < 6) { showCpError('6 أحرف على الأقل'); return; }
+
+  callAPI('changePassword', { email: _cpEmail, oldPass: oldP, newPass: newP }, function(err, res) {
+    if (err || !res || res.status !== 'ok') {
+      showCpError(res && res.message ? res.message : 'فشل تغيير كلمة المرور');
+      return;
+    }
+    closeChangePassModal();
+    toast('تم تغيير كلمة المرور ✅', 'ok');
+    hide('loginScreen');
+    if (S.isOwner) loadData();
+    else requestLocationThenSelfie();
+  });
+}
+
+function showCpError(msg) {
+  var el = document.getElementById('cpError');
+  if (el) { el.style.display = 'block'; el.textContent = msg; }
+}
+function clearCpError() {
+  var el = document.getElementById('cpError');
+  if (el) { el.style.display = 'none'; el.textContent = ''; }
+}
+
+// ── Users Management ───────────────────────────────────────────────────────────
+function openUsersModal() {
+  var m = document.getElementById('usersModal');
+  if (m) { m.style.display = 'flex'; loadUsers(); }
+}
+function closeUsersModal() {
+  var m = document.getElementById('usersModal');
+  if (m) m.style.display = 'none';
+}
+
+function loadUsers() {
+  var body = document.getElementById('usersTbody');
+  if (!body) return;
+  body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-2);">جاري التحميل...</td></tr>';
+
+  callAPI('getUsers', { email: S.userEmail }, function(err, res) {
+    if (err || !res || res.status !== 'ok') {
+      body.innerHTML = '<tr><td colspan="5" style="color:var(--error);padding:12px;">فشل التحميل</td></tr>';
+      return;
+    }
+    if (!res.users || !res.users.length) {
+      body.innerHTML = '<tr><td colspan="5" style="padding:12px;text-align:center;">لا يوجد مستخدمين</td></tr>';
+      return;
+    }
+    body.innerHTML = res.users.map(function(u) {
+      var roleLabel = u.role === 'owner' ? 'مدير' : 'موظف';
+      var roleColor = u.role === 'owner' ? '#7C3AED' : 'var(--primary)';
+      return '<tr style="border-bottom:1px solid var(--border);">' +
+        '<td style="padding:7px 10px;direction:ltr;text-align:left;">' + u.email + '</td>' +
+        '<td style="padding:7px 8px;">' + u.name + '</td>' +
+        '<td style="padding:7px 8px;"><span style="background:' + roleColor + ';color:white;padding:2px 8px;border-radius:20px;font-size:10px;">' + roleLabel + '</span></td>' +
+        '<td style="padding:7px 8px;font-family:monospace;">' + u.password + (u.isFirstLogin ? ' 🔴' : ' ✅') + '</td>' +
+        '<td style="padding:7px 8px;"><button onclick="resetUserPass(\'' + u.email.replace(/\'/g, "\\'") + '\')" style="background:var(--error-bg);color:var(--error);border:1px solid var(--error);border-radius:6px;padding:3px 8px;font-size:10px;font-family:\'Cairo\';cursor:pointer;">Reset</button></td>' +
+      '</tr>';
+    }).join('');
+  });
+}
+
+function resetUserPass(email) {
+  if (!confirm('إعادة تعيين كلمة مرور ' + email + ' إلى 123456؟')) return;
+  callAPI('resetPassword', { email: S.userEmail, targetEmail: email }, function(err, res) {
+    if (err || !res || res.status !== 'ok') { toast('فشل إعادة التعيين', 'err'); return; }
+    toast('تم إعادة تعيين كلمة المرور إلى 123456 ✅', 'ok');
+    loadUsers();
+  });
+}
+
+function addNewUser() {
+  var email = (document.getElementById('newUserEmail').value || '').trim();
+  var name  = (document.getElementById('newUserName').value  || '').trim();
+  var role  = document.getElementById('newUserRole').value;
+  if (!email || !name) { toast('أدخل البريد والاسم', 'err'); return; }
+
+  callAPI('addUser', { email: S.userEmail, newEmail: email, name: name, role: role }, function(err, res) {
+    if (err || !res || res.status !== 'ok') { toast(res && res.message ? res.message : 'فشل الإضافة', 'err'); return; }
+    toast('تم الإضافة — كلمة المرور: 123456 ✅', 'ok');
+    document.getElementById('newUserEmail').value = '';
+    document.getElementById('newUserName').value  = '';
+    loadUsers();
   });
 }
 
@@ -317,6 +428,7 @@ function loadData() {
       document.getElementById('adminFilterBar').classList.add('show');
       document.getElementById('btnDashTrigger').style.display    = 'inline-block';
       document.getElementById('btnAssignTrigger').style.display  = 'inline-block';
+      document.getElementById('btnUsersTrigger').style.display   = 'inline-block';
       document.getElementById('btnSummaryTrigger').style.display = 'none';
       // ملء dropdown الفريق
       var sel = document.getElementById('adminUserSelect');
@@ -328,7 +440,9 @@ function loadData() {
       if (S.ownerViewingUser) sel.value = S.ownerViewingUser;
     } else {
       document.getElementById('adminFilterBar').classList.remove('show');
-      document.getElementById('btnDashTrigger').style.display   = 'none';
+      document.getElementById('btnDashTrigger').style.display    = 'none';
+      document.getElementById('btnAssignTrigger').style.display  = 'none';
+      document.getElementById('btnUsersTrigger').style.display   = 'none';
       document.getElementById('btnSummaryTrigger').style.display = 'inline-block';
     }
 
