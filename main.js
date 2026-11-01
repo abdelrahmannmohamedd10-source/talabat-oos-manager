@@ -10,8 +10,7 @@ const firebaseConfig = {
   appId: "1:313411194103:web:0ec5595c0ece3d27b597f2"
 };
 firebase.initializeApp(firebaseConfig);
-const db      = firebase.firestore();
-const storage = firebase.storage();
+const db = firebase.firestore();
 
 // ── Constants ──
 const SS_ID = '1zrqSAAIyaNEBN30y0U7rWDDo4hl9O2Xz8QB9p3gRyGw';
@@ -466,6 +465,27 @@ function capturePhoto(key, input) {
   reader.readAsDataURL(file);
 }
 
+function compressPhoto(file) {
+  return new Promise(function(resolve) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const MAX = 800;
+        let w = img.width, h = img.height;
+        if (w > h && w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+        else if (h > MAX)     { w = Math.round(w * MAX / h); h = MAX; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.6));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 // ── SUBMIT FEEDBACK ──
 async function submitBatch() {
   const keys = Object.keys(S.selections);
@@ -477,15 +497,11 @@ async function submitBatch() {
   const btn = document.getElementById('btnBatchSubmit');
   btn.disabled = true; btn.textContent = 'جاري الارسال...';
   try {
-    // Upload photos to Firebase Storage
     const withPhotos = items.filter(i => i.photo);
     if (withPhotos.length) {
-      btn.textContent = 'جاري رفع الصور...';
+      btn.textContent = 'جاري ضغط الصور...';
       await Promise.all(withPhotos.map(async i => {
-        const path = `feedback_photos/${S.user.email}_${Date.now()}_${i.sku}`;
-        const ref  = storage.ref(path);
-        await ref.put(i.photo);
-        i.photoUrl = await ref.getDownloadURL();
+        i.photoBase64 = await compressPhoto(i.photo);
       }));
     }
     const payload = {
@@ -493,11 +509,11 @@ async function submitBatch() {
       tchampName:  S.user.name,
       date:        today(),
       items: items.map(i => ({
-        chainId:   i.chainId,   chainName: i.chainName,
-        branchId:  i.branchId, orderId:   i.orderId,
-        sku:       i.sku,       itemName:  i.itemName,
-        action:    i.action,    notes:     i.notes    || '',
-        photoUrl:  i.photoUrl  || null,
+        chainId:     i.chainId,    chainName: i.chainName,
+        branchId:    i.branchId,   orderId:   i.orderId,
+        sku:         i.sku,        itemName:  i.itemName,
+        action:      i.action,     notes:     i.notes || '',
+        photoBase64: i.photoBase64 || null,
       })),
       submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
     };
@@ -654,8 +670,12 @@ async function loadFeedbackTab() {
       var d   = doc.data();
       var cnt = (d.items || []).length;
       var rows = (d.items || []).slice(0,5).map(function(i) {
-        var c = i.action === 'found' ? 'var(--success)' : i.action === 'not_found' ? 'var(--error)' : 'var(--warning)';
-        return '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:11px;"><span>' + i.itemName + '</span><span style="color:' + c + ';font-weight:700;">' + i.action + '</span></div>';
+        var photoHtml = i.photoBase64
+          ? '<img src="' + i.photoBase64 + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px;margin-right:6px;vertical-align:middle;">'
+          : '';
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;">' +
+          '<div style="display:flex;align-items:center;gap:6px;">' + photoHtml + '<span>' + i.itemName + '</span></div>' +
+          '<span style="font-weight:700;white-space:nowrap;">' + i.action + '</span></div>';
       }).join('') + (cnt > 5 ? '<div style="font-size:10px;color:var(--text-2);margin-top:4px;">+ ' + (cnt-5) + ' عنصر اخر</div>' : '');
       return '<div style="background:white;border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
