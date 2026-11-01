@@ -124,6 +124,9 @@
 
   <!-- Filter Strip -->
   <div class="filter-strip">
+    <select id="fDate" class="f-select" onchange="applyFilters()">
+      <option value="">كل التواريخ</option>
+    </select>
     <select id="fChainName" class="f-select" onchange="applyFilters()">
       <option value="">كل Chain Names</option>
     </select>
@@ -133,6 +136,7 @@
     <select id="fStatus" class="f-select" onchange="applyFilters()">
       <option value="">كل الحالات</option>
       <option value="Not Found">Not Found</option>
+      <option value="Unavailable Menu item">Unavailable</option>
       <option value="Active">Active</option>
     </select>
     <button onclick="clearFilters()" class="btn-clear-filter">✕ مسح</button>
@@ -171,10 +175,11 @@
 
     <!-- Tabs -->
     <div class="dash-tabs">
-      <button class="dash-tab active" id="dtab-users"     onclick="switchDashTab('users')">👤 مستخدمين</button>
-      <button class="dash-tab"        id="dtab-feedback"  onclick="switchDashTab('feedback')">💬 فيدباك</button>
-      <button class="dash-tab"        id="dtab-summaries" onclick="switchDashTab('summaries')">📋 ملخصات</button>
-      <button class="dash-tab"        id="dtab-assign"    onclick="switchDashTab('assign')">🔀 توزيع</button>
+      <button class="dash-tab active" id="dtab-users"       onclick="switchDashTab('users')">👤 مستخدمين</button>
+      <button class="dash-tab"        id="dtab-feedback"   onclick="switchDashTab('feedback')">💬 فيدباك</button>
+      <button class="dash-tab"        id="dtab-summaries"  onclick="switchDashTab('summaries')">📋 ملخصات</button>
+      <button class="dash-tab"        id="dtab-assign"     onclick="switchDashTab('assign')">🔀 توزيع</button>
+      <button class="dash-tab"        id="dtab-performance" onclick="switchDashTab('performance')">📈 Performance</button>
     </div>
 
     <!-- Tab: Users -->
@@ -236,6 +241,18 @@
           style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Cairo';font-size:12px;box-sizing:border-box;">
       </div>
       <div id="assignTable"><div class="tab-loading">جاري التحميل...</div></div>
+    </div>
+
+    <!-- Tab: Performance -->
+    <div id="dashTabPerformance" class="dash-tab-content" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:13px;font-weight:800;">بيانات الأداء</span>
+        <button onclick="loadPerformanceTab()"
+          style="padding:6px 14px;background:var(--primary-bg);color:var(--primary);border:1.5px solid var(--primary);border-radius:8px;font-family:'Cairo';font-size:12px;font-weight:800;cursor:pointer;">
+          🔄 تحديث
+        </button>
+      </div>
+      <div id="performanceTable"><div class="tab-loading">جاري التحميل...</div></div>
     </div>
 
   </div>

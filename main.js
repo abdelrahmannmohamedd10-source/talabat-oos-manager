@@ -19,7 +19,9 @@ const GVIZ  = `https://docs.google.com/spreadsheets/d/${SS_ID}/gviz/tq?tqx=out:j
 // Master_Database column indices
 const MC = { DATE:0, VENDOR:1, BRANCH_ID:2, ORDER_ID:3, SKU:4, ITEM_NAME:5,
              STATUS:6, CHAIN_ID:7, CHAIN_NAME:8, PROC_STATUS:11, TCHAMP:12, IMG_URL:13 };
-// maping sheet column indices
+// chains sheet column indices (chains tab)
+const CC = { CHAIN_NAME:0, CHAIN_ID:1, VENDOR_NAME:2, VENDOR_ID:3, TCHAMP_NICK:4 };
+// maping sheet column indices (fallback)
 const MP = { CHAIN_NAME:0, TCHAMP_NICK:1, CHAIN_ID:2, TCHAMP_EMAIL:3, MGR_NAME:5, MGR_EMAIL:6 };
 
 const ACTIONS = [
@@ -92,9 +94,15 @@ function gvizRows(table) {
   return table.rows.map(r =>
     (r.c || []).map(c => {
       if (!c || c.v == null) return '';
+      // GViz date format: "Date(yyyy,m,d)" where m is 0-indexed
       if (typeof c.v === 'string' && c.v.startsWith('Date(')) {
         const m = c.v.match(/Date\((\d+),(\d+),(\d+)\)/);
         if (m) return new Date(+m[1], +m[2], +m[3]);
+      }
+      // Fallback: use formatted display string if available and looks like a date
+      if (c.f && typeof c.f === 'string') {
+        const d = new Date(c.f);
+        if (!isNaN(d) && d.getFullYear() > 1971) return d;
       }
       return c.v;
     })
@@ -253,15 +261,9 @@ async function loadOOSItems(filterTchampEmail) {
   try {
     const table = await fetchGViz('Master_Database');
     const rows  = gvizRows(table);
-    const todayDate = new Date();
-    const todayTs   = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate()).getTime();
 
-    let filtered = rows.filter(r => {
-      const d = r[MC.DATE];
-      if (!d || !(d instanceof Date)) return false;
-      return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() === todayTs;
-    });
-    if (filtered.length === 0) filtered = rows.filter(r => r[MC.ITEM_NAME]);
+    // Show all rows with an item name
+    let filtered = rows.filter(r => r[MC.ITEM_NAME]);
 
     if (S.user.role === 'tchamp') {
       filtered = filtered.filter(r => S.myChains.includes(String(r[MC.CHAIN_ID])));
@@ -275,6 +277,7 @@ async function loadOOSItems(filterTchampEmail) {
     S.items = filtered.map((r, i) => ({
       key:       `r${i}`,
       date:      r[MC.DATE],
+      dateStr:   r[MC.DATE] instanceof Date ? dateKey(r[MC.DATE]) : '',
       vendor:    String(r[MC.VENDOR]    || ''),
       branchId:  String(r[MC.BRANCH_ID] || ''),
       orderId:   String(r[MC.ORDER_ID]  || ''),
@@ -297,6 +300,11 @@ async function loadOOSItems(filterTchampEmail) {
   }
 }
 
+function dateKey(d) {
+  if (!d || !(d instanceof Date)) return '';
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 async function refreshOOS() {
   const email = document.getElementById('adminUserSelect') ? document.getElementById('adminUserSelect').value : null;
   await loadOOSItems(email || null);
@@ -311,26 +319,34 @@ async function onAdminUserChange() {
 function rebuildFilters() {
   const chainNames = [...new Set(S.items.map(i => i.chainName).filter(Boolean))].sort();
   const chainIds   = [...new Set(S.items.map(i => i.chainId).filter(Boolean))].sort();
+  const dates      = [...new Set(S.items.map(i => i.dateStr).filter(Boolean))].sort().reverse();
   const s1 = document.getElementById('fChainName');
   const s2 = document.getElementById('fChainId');
+  const s3 = document.getElementById('fDate');
   s1.innerHTML = '<option value="">كل Chain Names</option>' + chainNames.map(v => `<option value="${v}">${v}</option>`).join('');
   s2.innerHTML = '<option value="">كل Chain IDs</option>'   + chainIds.map(v => `<option value="${v}">${v}</option>`).join('');
+  if (s3) {
+    const todayK = today();
+    s3.innerHTML = '<option value="">كل التواريخ</option>' + dates.map(v => `<option value="${v}" ${v===todayK?'selected':''}>${v}</option>`).join('');
+  }
 }
 
 function applyFilters() {
   const cn = document.getElementById('fChainName').value;
   const ci = document.getElementById('fChainId').value;
   const st = document.getElementById('fStatus').value;
+  const dt = document.getElementById('fDate') ? document.getElementById('fDate').value : '';
   S.filtered = S.items.filter(i =>
     (!cn || i.chainName === cn) &&
     (!ci || i.chainId   === ci) &&
-    (!st || i.status    === st)
+    (!st || i.status    === st) &&
+    (!dt || i.dateStr   === dt)
   );
   renderItems();
 }
 
 function clearFilters() {
-  ['fChainName','fChainId','fStatus'].forEach(id => document.getElementById(id).value = '');
+  ['fChainName','fChainId','fStatus','fDate'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   applyFilters();
 }
 
@@ -485,7 +501,7 @@ function closeDash() {
 
 function switchDashTab(tab) {
   S.dashTab = tab;
-  ['users','feedback','summaries','assign'].forEach(function(t) {
+  ['users','feedback','summaries','assign','performance'].forEach(function(t) {
     var cap = t.charAt(0).toUpperCase() + t.slice(1);
     document.getElementById('dashTab' + cap).style.display = t === tab ? 'block' : 'none';
     document.getElementById('dtab-' + t).classList.toggle('active', t === tab);
@@ -494,10 +510,11 @@ function switchDashTab(tab) {
 }
 
 function loadDashTab(tab) {
-  if      (tab === 'users')     loadUsersTab();
-  else if (tab === 'feedback')  loadFeedbackTab();
-  else if (tab === 'summaries') loadSummariesTab();
-  else if (tab === 'assign')    loadAssignTab();
+  if      (tab === 'users')       loadUsersTab();
+  else if (tab === 'feedback')    loadFeedbackTab();
+  else if (tab === 'summaries')   loadSummariesTab();
+  else if (tab === 'assign')      loadAssignTab();
+  else if (tab === 'performance') loadPerformanceTab();
 }
 
 // ── USERS TAB ──
@@ -650,16 +667,41 @@ async function loadAssignTab() {
   const el = document.getElementById('assignTable');
   el.innerHTML = '<div class="tab-loading">جاري تحميل الشينز من الشيت...</div>';
   try {
-    const table = await fetchGViz('maping');
-    const rows  = gvizRows(table);
-    _allChains  = rows.filter(function(r) { return r[MP.CHAIN_ID]; }).map(function(r) {
-      return {
-        chainId:   String(r[MP.CHAIN_ID]    || ''),
-        chainName: String(r[MP.CHAIN_NAME]  || ''),
-        defEmail:  String(r[MP.TCHAMP_EMAIL]|| ''),
-        defNick:   String(r[MP.TCHAMP_NICK] || ''),
-      };
-    });
+    // Try "chains" sheet first, fall back to "maping"
+    var table, rows, usedChains = false;
+    try {
+      table = await fetchGViz('chains');
+      rows  = gvizRows(table);
+      // chains sheet: col0=name, col1=ID, col4=tchamp nick
+      if (rows.length > 0 && rows[0][CC.CHAIN_ID]) usedChains = true;
+    } catch(e2) {}
+    if (!usedChains) {
+      table = await fetchGViz('maping');
+      rows  = gvizRows(table);
+    }
+
+    if (usedChains) {
+      _allChains = rows.filter(function(r) { return r[CC.CHAIN_ID]; }).map(function(r) {
+        return {
+          chainId:   String(r[CC.CHAIN_ID]   || ''),
+          chainName: String(r[CC.CHAIN_NAME] || ''),
+          defEmail:  '',
+          defNick:   String(r[CC.TCHAMP_NICK]|| ''),
+        };
+      });
+      // Deduplicate by chainId
+      var seen = {};
+      _allChains = _allChains.filter(function(c) { if (seen[c.chainId]) return false; seen[c.chainId] = true; return true; });
+    } else {
+      _allChains = rows.filter(function(r) { return r[MP.CHAIN_ID]; }).map(function(r) {
+        return {
+          chainId:   String(r[MP.CHAIN_ID]    || ''),
+          chainName: String(r[MP.CHAIN_NAME]  || ''),
+          defEmail:  String(r[MP.TCHAMP_EMAIL]|| ''),
+          defNick:   String(r[MP.TCHAMP_NICK] || ''),
+        };
+      });
+    }
     await loadAssignments();
     if (!S.allUsers.length) await loadAllUsers();
     renderAssignTable(_allChains);
@@ -741,6 +783,36 @@ async function saveAssignments() {
     console.error(e); toast('خطأ في الحفظ', 'err');
   } finally {
     btn.disabled = false; btn.textContent = 'حفظ التوزيع';
+  }
+}
+
+// ── PERFORMANCE TAB ──
+async function loadPerformanceTab() {
+  var el = document.getElementById('performanceTable');
+  el.innerHTML = '<div class="tab-loading">جاري تحميل بيانات الأداء...</div>';
+  try {
+    var table = await fetchGViz('performance');
+    var cols  = (table.cols || []).map(function(c) { return c.label || c.id || ''; });
+    var rows  = gvizRows(table);
+    if (!rows.length) { el.innerHTML = '<div class="tab-empty">لا توجد بيانات</div>'; return; }
+
+    el.innerHTML = '<div style="overflow-x:auto;">' +
+      '<table style="width:100%;border-collapse:collapse;font-size:11px;">' +
+      '<thead><tr style="background:var(--bg);border-bottom:2px solid var(--border);">' +
+      cols.map(function(c) { return '<th style="padding:8px 10px;text-align:right;white-space:nowrap;">' + c + '</th>'; }).join('') +
+      '</tr></thead><tbody>' +
+      rows.map(function(r, ri) {
+        return '<tr style="border-bottom:1px solid var(--border);' + (ri % 2 === 0 ? '' : 'background:#FAFAFA;') + '">' +
+          r.map(function(cell) {
+            var v = cell instanceof Date ? fmtDate(cell) : (cell || '');
+            return '<td style="padding:8px 10px;">' + v + '</td>';
+          }).join('') +
+          '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  } catch(e) {
+    console.error(e);
+    el.innerHTML = '<div style="color:var(--error);padding:12px;">خطأ في تحميل بيانات الأداء</div>';
   }
 }
 
