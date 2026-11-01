@@ -665,43 +665,26 @@ var _allChains = [];
 
 async function loadAssignTab() {
   const el = document.getElementById('assignTable');
-  el.innerHTML = '<div class="tab-loading">جاري تحميل الشينز من الشيت...</div>';
+  el.innerHTML = '<div class="tab-loading">جاري تحميل الشينز...</div>';
   try {
-    // Try "chains" sheet first, fall back to "maping"
-    var table, rows, usedChains = false;
-    try {
-      table = await fetchGViz('chains');
-      rows  = gvizRows(table);
-      // chains sheet: col0=name, col1=ID, col4=tchamp nick
-      if (rows.length > 0 && rows[0][CC.CHAIN_ID]) usedChains = true;
-    } catch(e2) {}
-    if (!usedChains) {
-      table = await fetchGViz('maping');
-      rows  = gvizRows(table);
-    }
-
-    if (usedChains) {
-      _allChains = rows.filter(function(r) { return r[CC.CHAIN_ID]; }).map(function(r) {
-        return {
-          chainId:   String(r[CC.CHAIN_ID]   || ''),
-          chainName: String(r[CC.CHAIN_NAME] || ''),
-          defEmail:  '',
-          defNick:   String(r[CC.TCHAMP_NICK]|| ''),
-        };
-      });
-      // Deduplicate by chainId
-      var seen = {};
-      _allChains = _allChains.filter(function(c) { if (seen[c.chainId]) return false; seen[c.chainId] = true; return true; });
-    } else {
-      _allChains = rows.filter(function(r) { return r[MP.CHAIN_ID]; }).map(function(r) {
-        return {
-          chainId:   String(r[MP.CHAIN_ID]    || ''),
-          chainName: String(r[MP.CHAIN_NAME]  || ''),
-          defEmail:  String(r[MP.TCHAMP_EMAIL]|| ''),
-          defNick:   String(r[MP.TCHAMP_NICK] || ''),
-        };
+    // Build chain list directly from OOS data (guaranteed matching IDs)
+    var srcItems = S.items;
+    if (!srcItems.length) {
+      var table = await fetchGViz('Master_Database');
+      var rows  = gvizRows(table);
+      srcItems  = rows.filter(function(r){ return r[MC.ITEM_NAME]; }).map(function(r,i){
+        return { chainId: String(r[MC.CHAIN_ID]||''), chainName: String(r[MC.CHAIN_NAME]||'') };
       });
     }
+    var seen = {};
+    _allChains = [];
+    srcItems.forEach(function(item) {
+      if (item.chainId && !seen[item.chainId]) {
+        seen[item.chainId] = true;
+        _allChains.push({ chainId: item.chainId, chainName: item.chainName, defEmail: '', defNick: '' });
+      }
+    });
+    _allChains.sort(function(a,b){ return a.chainName.localeCompare(b.chainName); });
     await loadAssignments();
     if (!S.allUsers.length) await loadAllUsers();
     renderAssignTable(_allChains);
