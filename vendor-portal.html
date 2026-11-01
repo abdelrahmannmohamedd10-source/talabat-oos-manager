@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بوابة تحديث المنتجات - Talabat Partner</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+  <style>
+    :root {
+      --orange:      #ff5a00;
+      --orange-dark: #e04f00;
+      --orange-soft: #fff3ec;
+      --blue:        #1153fc;
+      --text:        #1a1a1a;
+      --muted:       #6b7280;
+      --border:      #e5e7eb;
+      --success:     #10b981;
+      --danger:      #ef4444;
+      --bg:          #f4f5f8;
+      --shadow:      0 2px 14px rgba(0,0,0,0.07);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Cairo', system-ui, sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+
+    /* ── HEADER ── */
+    .site-header {
+      background: linear-gradient(135deg, var(--orange) 0%, #ff8533 100%);
+      padding: 28px 20px 26px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(255,90,0,0.28);
+    }
+    .header-brand {
+      display: inline-flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    }
+    .brand-icon {
+      width: 42px; height: 42px; background: white; border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 19px; font-weight: 900; color: var(--orange); flex-shrink: 0;
+    }
+    .brand-name { font-size: 21px; font-weight: 900; color: white; letter-spacing: 1px; }
+    .site-header h1 { color: white; font-size: 1.15rem; font-weight: 700; margin-bottom: 10px; }
+    .chain-pill {
+      display: inline-block; background: rgba(255,255,255,0.22); color: white;
+      padding: 5px 20px; border-radius: 50px; font-size: 0.88rem; font-weight: 700;
+      border: 1.5px solid rgba(255,255,255,0.38);
+    }
+
+    /* ── MAIN ── */
+    .main-wrap { max-width: 700px; margin: 0 auto; padding: 22px 16px; }
+
+    /* ── LOADING ── */
+    #loadingStatus {
+      background: white; border-radius: 14px; box-shadow: var(--shadow);
+      padding: 36px 20px; text-align: center;
+    }
+    .spinner {
+      width: 42px; height: 42px; border: 4px solid var(--orange-soft);
+      border-top-color: var(--orange); border-radius: 50%;
+      animation: spin 0.75s linear infinite; margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { color: var(--muted); font-size: 0.9rem; font-weight: 600; }
+
+    /* ── ERROR ── */
+    .error-box {
+      background: #fef2f2; border: 1.5px solid var(--danger); border-radius: 12px;
+      padding: 16px 20px; color: var(--danger); font-weight: 700;
+      text-align: center; display: none;
+    }
+
+    /* ── PANEL ── */
+    .panel {
+      background: white; border-radius: 14px; box-shadow: var(--shadow);
+      padding: 20px; margin-bottom: 16px;
+    }
+    .panel-title {
+      font-size: 0.95rem; font-weight: 800; color: var(--text);
+      margin-bottom: 14px; display: flex; align-items: center; gap: 9px;
+    }
+    .panel-title::before {
+      content: ''; width: 4px; height: 20px; background: var(--orange);
+      border-radius: 3px; flex-shrink: 0;
+    }
+
+    /* ── SELECTS & INPUTS ── */
+    .form-select, .status-select, .detail-input {
+      width: 100%; border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 11px 14px; font-size: 0.9rem; color: var(--text);
+      font-family: 'Cairo', inherit; background: white; cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s; appearance: auto;
+    }
+    .form-select:focus, .status-select:focus, .detail-input:focus {
+      outline: none; border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(255,90,0,0.1);
+    }
+
+    /* ── SECTION HEADING ── */
+    .section-heading {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.93rem; font-weight: 800; color: var(--blue); margin-bottom: 6px;
+    }
+    .section-dot { width: 9px; height: 9px; background: var(--blue); border-radius: 50%; flex-shrink: 0; }
+    .section-hint { font-size: 0.8rem; color: var(--muted); margin-bottom: 16px; }
+
+    /* ── PRODUCT CARD ── */
+    .product-card {
+      background: white; border: 1.5px solid var(--border);
+      border-right: 4px solid var(--danger); border-radius: 12px;
+      overflow: hidden; margin-bottom: 13px; transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .product-card.completed {
+      border-right-color: var(--success);
+      box-shadow: 0 2px 10px rgba(16,185,129,0.1);
+    }
+    .product-card-header {
+      display: flex; align-items: center; gap: 13px;
+      padding: 13px 16px; background: #fafafa; border-bottom: 1px solid var(--border);
+    }
+    .product-img {
+      width: 62px; height: 62px; object-fit: contain; border-radius: 9px;
+      border: 1px solid var(--border); background: white; flex-shrink: 0;
+    }
+    .product-img-ph {
+      width: 62px; height: 62px; border-radius: 9px; background: var(--orange-soft);
+      display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+    }
+    .product-info { flex: 1; min-width: 0; }
+    .product-name { font-size: 0.88rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .product-name-en { font-size: 0.78rem; color: var(--muted); margin-bottom: 5px; }
+    .product-sku {
+      display: inline-block; background: var(--bg); color: var(--muted);
+      font-size: 0.72rem; font-weight: 600; padding: 2px 10px;
+      border-radius: 20px; font-family: monospace;
+    }
+
+    /* ── CARD BODY ── */
+    .product-card-body { padding: 14px 16px; }
+    .field-label {
+      display: block; font-size: 0.77rem; font-weight: 700; color: var(--muted);
+      margin-bottom: 7px; letter-spacing: 0.3px;
+    }
+    .detail-input { padding: 10px 13px; font-size: 0.88rem; margin-top: 10px; }
+
+    /* ── FILE UPLOAD ── */
+    .file-upload-area {
+      margin-top: 10px; border: 1.5px dashed var(--border); border-radius: 10px;
+      padding: 14px; text-align: center; background: var(--bg); cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .file-upload-area:hover { border-color: var(--orange); }
+    .file-upload-area input[type="file"] { display: none; }
+    .file-upload-label { font-size: 0.82rem; color: var(--muted); cursor: pointer; display: block; }
+    .file-preview { margin-top: 8px; }
+    .file-preview img { max-width: 100%; max-height: 150px; border-radius: 8px; object-fit: contain; }
+
+    /* ── QUANTITY ALERT ── */
+    .quantity-alert {
+      display: none; background: #fff8f5; border: 1.5px solid #ffcca8;
+      border-radius: 10px; padding: 12px 14px; margin-top: 11px;
+      font-size: 0.82rem; color: #c0392b; line-height: 1.6;
+    }
+
+    /* ── SUBMIT ── */
+    .btn-submit {
+      width: 100%; background: var(--orange); color: white; border: none;
+      border-radius: 12px; padding: 14px; font-size: 1rem; font-weight: 800;
+      font-family: 'Cairo', inherit; cursor: pointer; margin-top: 16px;
+      transition: background 0.2s, transform 0.1s; letter-spacing: 0.3px;
+    }
+    .btn-submit:hover  { background: var(--orange-dark); }
+    .btn-submit:active { transform: scale(0.99); }
+    .btn-submit:disabled { background: #d1d5db; cursor: not-allowed; }
+
+    /* ── VALIDATION ── */
+    .validation-warning {
+      background: #fef2f2; border: 1.5px solid var(--danger); border-radius: 10px;
+      padding: 13px 16px; font-size: 0.87rem; font-weight: 700;
+      color: var(--danger); text-align: center; display: none; margin-top: 16px;
+    }
+
+    /* ── UPLOAD PROGRESS ── */
+    .upload-status {
+      background: #f0f9ff; border: 1.5px solid #7dd3fc; border-radius: 10px;
+      padding: 12px 16px; font-size: 0.84rem; color: #0369a1;
+      display: none; margin-top: 12px; font-weight: 600;
+    }
+
+    /* ── SUCCESS ── */
+    .success-screen {
+      background: white; border-radius: 16px; box-shadow: var(--shadow);
+      padding: 56px 30px; text-align: center; display: none;
+    }
+    .success-icon  { font-size: 58px; margin-bottom: 16px; }
+    .success-title { font-size: 1.25rem; font-weight: 800; color: var(--success); margin-bottom: 8px; }
+    .success-sub   { color: var(--muted); font-size: 0.9rem; }
+
+    .d-none { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="header-brand">
+    <div class="brand-icon">T</div>
+    <span class="brand-name">talabat</span>
+  </div>
+  <h1>بوابة تحديث المنتجات النواقص</h1>
+  <span class="chain-pill" id="displayChainName">جاري التحميل...</span>
+</header>
+
+<div class="main-wrap">
+  <!-- LOADING -->
+  <div id="loadingStatus">
+    <div class="spinner"></div>
+    <p class="loading-text">جاري جلب الفروع والمنتجات...</p>
+  </div>
+
+  <!-- ERROR -->
+  <div id="errorMessage" class="error-box"></div>
+
+  <!-- MAIN -->
+  <div id="mainContainer" class="d-none">
+    <div class="panel">
+      <div class="panel-title">اختر الفرع</div>
+      <select id="branchSelect" class="form-select" onchange="onBranchChange()">
+        <option value="">— اختر الفرع للبدء —</option>
+      </select>
+    </div>
+
+    <div id="productsSection" class="d-none">
+      <div class="section-heading">
+        <span class="section-dot"></span>
+        <span id="currentBranchTitle"></span>
+      </div>
+      <p class="section-hint">يرجى تحديد الإجراء المطلوب لكل منتج قبل الإرسال.</p>
+
+      <div id="productsList"></div>
+
+      <div id="validationWarning" class="validation-warning">
+        ⚠️ يرجى تحديد إجراء لكل المنتجات قبل الإرسال.
+      </div>
+      <div id="uploadStatus" class="upload-status"></div>
+
+      <button id="submitBtn" class="btn-submit" onclick="submitBranchData()">
+        حفظ وإرسال الفرع
+      </button>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div id="successMessage" class="success-screen">
+    <div class="success-icon">🎉</div>
+    <div class="success-title">تم إرسال كافة التحديثات بنجاح!</div>
+    <p class="success-sub">شكراً لتعاونكم معنا.</p>
+  </div>
+</div>
+
+<!-- Firebase + Logic -->
+<script>
+'use strict';
+
+// ── Firebase Init ──
+const firebaseConfig = {
+  apiKey: "AIzaSyCQ-YjSUbjFSlhdcio1PhsETrg_Y8xFxTM",
+  authDomain: "oosboda-8f26f.firebaseapp.com",
+  projectId: "oosboda-8f26f",
+  storageBucket: "oosboda-8f26f.firebasestorage.app",
+  messagingSenderId: "313411194103",
+  appId: "1:313411194103:web:0ec5595c0ece3d27b597f2"
+};
+firebase.initializeApp(firebaseConfig);
+const db      = firebase.firestore();
+const storage = firebase.storage();
+
+// ── Sheet Config ──
+const SS_ID = '1zrqSAAIyaNEBN30y0U7rWDDo4hl9O2Xz8QB9p3gRyGw';
+const MC = { DATE:1, VENDOR:2, BRANCH_ID:3, ORDER_ID:4, SKU:5,
+             ITEM_NAME_AR:6, ITEM_NAME:7, STATUS:8, CHAIN_ID:9, CHAIN_NAME:10,
+             PROC_STATUS:13, IMG_URL:14, TCHAMP:15 };
+
+// ── URL Params ──
+const params         = new URLSearchParams(window.location.search);
+const CHAIN_ID_PARAM = params.get('chainId') || '';
+
+var globalData       = {};
+var currentChainName = '';
+
+// ── GViz Parser ──
+function gvizRows(table) {
+  if (!table || !table.rows) return [];
+  return table.rows.map(function(r) {
+    return (r.c || []).map(function(c) {
+      if (!c || c.v == null) return '';
+      if (typeof c.v === 'string' && c.v.startsWith('Date(')) {
+        var m = c.v.match(/Date\((\d+),(\d+),(\d+)\)/);
+        if (m) return new Date(+m[1], +m[2], +m[3]);
+      }
+      return c.v;
+    });
+  });
+}
+
+// ── Helpers ──
+function showError(msg) {
+  document.getElementById('loadingStatus').classList.add('d-none');
+  var el = document.getElementById('errorMessage');
+  el.style.display = 'block';
+  el.textContent = msg;
+}
+
+function today() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+// ── LOAD DATA ──
+window.onload = async function() {
+  if (!CHAIN_ID_PARAM) {
+    showError('رابط غير صحيح — لا يوجد Chain ID. مثال: vendor-portal.html?chainId=694039');
+    return;
+  }
+
+  try {
+    var res  = await fetch('https://docs.google.com/spreadsheets/d/' + SS_ID + '/gviz/tq?tqx=out:json&sheet=Master_Database');
+    var text = await res.text();
+    var i = text.indexOf('{'), j = text.lastIndexOf('}');
+    var table = JSON.parse(text.slice(i, j+1)).table;
+    var rows  = gvizRows(table);
+
+    // Filter by chainId
+    var chainRows = rows.filter(function(r) {
+      return String(r[MC.CHAIN_ID]) === CHAIN_ID_PARAM && (r[MC.ITEM_NAME_AR] || r[MC.ITEM_NAME]);
+    });
+
+    if (!chainRows.length) {
+      showError('لا توجد منتجات لهذا الحساب (Chain ID: ' + CHAIN_ID_PARAM + ')');
+      return;
+    }
+
+    // Chain name
+    currentChainName = String(chainRows[0][MC.CHAIN_NAME] || CHAIN_ID_PARAM);
+    document.getElementById('displayChainName').textContent = currentChainName;
+
+    // Group by branch (Vendor Name from col 2)
+    globalData = {};
+    chainRows.forEach(function(r) {
+      var branchName = String(r[MC.VENDOR] || '');
+      var branchId   = String(r[MC.BRANCH_ID] || '');
+      var key = branchName || branchId;
+      if (!key) return;
+      if (!globalData[key]) globalData[key] = { branchId: branchId, products: [] };
+      globalData[key].products.push({
+        sku:     String(r[MC.SKU]          || ''),
+        name:    String(r[MC.ITEM_NAME_AR] || r[MC.ITEM_NAME] || ''),
+        nameEn:  String(r[MC.ITEM_NAME]    || ''),
+        image:   String(r[MC.IMG_URL]      || ''),
+        status:  String(r[MC.STATUS]       || ''),
+      });
+    });
+
+    // Populate branch selector
+    var branchSelect = document.getElementById('branchSelect');
+    branchSelect.innerHTML = '<option value="">— اختر الفرع للبدء —</option>';
+    Object.keys(globalData).forEach(function(key) {
+      var opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = key;
+      branchSelect.appendChild(opt);
+    });
+
+    document.getElementById('loadingStatus').classList.add('d-none');
+    document.getElementById('mainContainer').classList.remove('d-none');
+
+  } catch(e) {
+    showError('خطأ في تحميل البيانات: ' + e.message);
+  }
+};
+
+// ── BRANCH CHANGE ──
+function onBranchChange() {
+  var selected  = document.getElementById('branchSelect').value;
+  var section   = document.getElementById('productsSection');
+  var container = document.getElementById('productsList');
+  container.innerHTML = '';
+  document.getElementById('validationWarning').style.display = 'none';
+  document.getElementById('uploadStatus').style.display = 'none';
+
+  if (!selected || !globalData[selected]) {
+    section.classList.add('d-none');
+    return;
+  }
+
+  document.getElementById('currentBranchTitle').textContent = 'الفرع: ' + selected;
+
+  var products = globalData[selected].products;
+  products.forEach(function(p, idx) {
+    var div = document.createElement('div');
+    div.id = 'row_' + idx;
+    div.className = 'product-card';
+
+    var imgHtml = p.image
+      ? '<img src="' + p.image + '" class="product-img" onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'product-img-ph\',textContent:\'🛍️\'}))">'
+      : '<div class="product-img-ph">🛍️</div>';
+
+    div.innerHTML = [
+      '<div class="product-card-header">',
+        imgHtml,
+        '<div class="product-info">',
+          '<div class="product-name">' + p.name + '</div>',
+          p.nameEn && p.nameEn !== p.name ? '<div class="product-name-en">' + p.nameEn + '</div>' : '',
+          '<span class="product-sku">SKU: ' + p.sku + '</span>',
+        '</div>',
+      '</div>',
+      '<div class="product-card-body">',
+        '<label class="field-label">الإجراء المطلوب</label>',
+        '<select class="status-select" id="sel_' + idx + '" onchange="onStatusChange(' + idx + ', this.value)">',
+          '<option value="">— اختر الإجراء —</option>',
+          '<option value="found">✅  متوفر بالفرع</option>',
+          '<option value="oos">❌  غير متوفر (Out of Stock)</option>',
+          '<option value="wrong_image">🖼️  صورة خاطئة</option>',
+          '<option value="wrong_barcode">🔢  باركود خاطئ</option>',
+          '<option value="wrong_sku">🔑  SKU خاطئ</option>',
+          '<option value="wrong_price">💰  سعر خاطئ</option>',
+          '<option value="wrong_desc">✏️  اسم/وصف خاطئ</option>',
+          '<option value="delist">🗑️  طلب حذف المنتج</option>',
+          '<option value="qty_issue">📦  مشكلة في الكمية</option>',
+        '</select>',
+        '<div id="qty_alert_' + idx + '" class="quantity-alert">',
+          '📹 برجاء تفعيل تحديث المخزون اليومي عبر الـ SFTP (max sales quantity).',
+        '</div>',
+        '<div id="detail_' + idx + '"></div>',
+      '</div>',
+    ].join('');
+
+    container.appendChild(div);
+  });
+
+  section.classList.remove('d-none');
+}
+
+// ── STATUS CHANGE ──
+function onStatusChange(idx, val) {
+  var card     = document.getElementById('row_' + idx);
+  var detail   = document.getElementById('detail_' + idx);
+  var qtyAlert = document.getElementById('qty_alert_' + idx);
+
+  card.classList.toggle('completed', val !== '');
+  qtyAlert.style.display = val === 'qty_issue' ? 'block' : 'none';
+
+  detail.innerHTML = '';
+  if (!val || val === 'found' || val === 'oos' || val === 'delist' || val === 'qty_issue') return;
+
+  if (val === 'wrong_image') {
+    detail.innerHTML = [
+      '<div class="file-upload-area" onclick="document.getElementById(\'file_' + idx + '\').click()">',
+        '<input type="file" id="file_' + idx + '" accept="image/*" onchange="previewImg(' + idx + ', this)">',
+        '<label class="file-upload-label" id="file_label_' + idx + '">📷 اضغط لرفع صورة الصحيحة</label>',
+        '<div class="file-preview" id="file_preview_' + idx + '"></div>',
+      '</div>',
+      '<input type="text" id="input_' + idx + '" class="detail-input" placeholder="ملاحظة اختيارية...">',
+    ].join('');
+  } else {
+    var ph = {
+      wrong_barcode: 'أدخل الباركود الصحيح...',
+      wrong_sku:     'أدخل الـ SKU الصحيح...',
+      wrong_price:   'أدخل السعر الصحيح...',
+      wrong_desc:    'أدخل الاسم/الوصف الصحيح...',
+    }[val] || 'أدخل التفاصيل...';
+    detail.innerHTML = '<input type="text" id="input_' + idx + '" class="detail-input" placeholder="' + ph + '">';
+  }
+}
+
+function previewImg(idx, input) {
+  var label   = document.getElementById('file_label_' + idx);
+  var preview = document.getElementById('file_preview_' + idx);
+  if (!input.files.length) return;
+  var file = input.files[0];
+  label.textContent = '✅ ' + file.name;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    preview.innerHTML = '<img src="' + e.target.result + '">';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── SUBMIT ──
+async function submitBranchData() {
+  var selected = document.getElementById('branchSelect').value;
+  if (!selected || !globalData[selected]) return;
+
+  var products = globalData[selected].products;
+  var selects  = document.querySelectorAll('.status-select');
+  var hasError = false;
+  var payload  = [];
+  var imgUploads = [];
+
+  selects.forEach(function(sel, idx) {
+    var val = sel.value;
+    if (!val) {
+      hasError = true;
+      document.getElementById('row_' + idx).classList.remove('completed');
+    } else {
+      var item = {
+        sku:    products[idx].sku,
+        name:   products[idx].name,
+        nameEn: products[idx].nameEn,
+        action: val,
+        detail: '',
+        imgUrl: null,
+      };
+      var inputTxt = document.getElementById('input_' + idx);
+      if (inputTxt) item.detail = inputTxt.value;
+      var inputFile = document.getElementById('file_' + idx);
+      if (inputFile && inputFile.files.length) {
+        imgUploads.push({ idx: idx, file: inputFile.files[0], item: item });
+      }
+      payload.push(item);
+    }
+  });
+
+  if (hasError) {
+    document.getElementById('validationWarning').style.display = 'block';
+    return;
+  }
+  document.getElementById('validationWarning').style.display = 'none';
+
+  var btn = document.getElementById('submitBtn');
+  var statusEl = document.getElementById('uploadStatus');
+  btn.disabled = true;
+  btn.textContent = 'جاري الحفظ...';
+
+  try {
+    // Upload images to Firebase Storage
+    if (imgUploads.length) {
+      statusEl.style.display = 'block';
+      statusEl.textContent = 'جاري رفع الصور (' + imgUploads.length + ')...';
+      await Promise.all(imgUploads.map(async function(u) {
+        var ext  = u.file.name.split('.').pop();
+        var path = 'vendor_images/' + CHAIN_ID_PARAM + '_' + today() + '_sku' + u.item.sku + '.' + ext;
+        var ref  = storage.ref(path);
+        await ref.put(u.file);
+        u.item.imgUrl = await ref.getDownloadURL();
+      }));
+      statusEl.textContent = 'تم رفع الصور ✓ — جاري الحفظ...';
+    }
+
+    // Save to Firestore
+    await db.collection('vendor_reports').add({
+      chainId:    CHAIN_ID_PARAM,
+      chainName:  currentChainName,
+      branchName: selected,
+      branchId:   globalData[selected].branchId,
+      date:       today(),
+      products:   payload,
+      submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Remove branch from pending list
+    delete globalData[selected];
+    var branchSelect = document.getElementById('branchSelect');
+    for (var i = 0; i < branchSelect.options.length; i++) {
+      if (branchSelect.options[i].value === selected) { branchSelect.remove(i); break; }
+    }
+    document.getElementById('productsSection').classList.add('d-none');
+    statusEl.style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = 'حفظ وإرسال الفرع';
+
+    if (!Object.keys(globalData).length) {
+      document.getElementById('mainContainer').classList.add('d-none');
+      document.getElementById('successMessage').style.display = 'block';
+    } else {
+      alert('تم حفظ الفرع بنجاح! اختر الفرع التالي.');
+      branchSelect.value = '';
+    }
+
+  } catch(e) {
+    statusEl.style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = 'حفظ وإرسال الفرع';
+    alert('خطأ في الحفظ: ' + e.message);
+  }
+}
+</script>
+</body>
+</html>
