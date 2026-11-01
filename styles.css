@@ -173,6 +173,20 @@ textarea.sum-input { resize:vertical; }
 
 #btnSummaryTrigger { background:#0F172A; color:white; border:none; padding:5px 12px; border-radius:20px; font-size:11px; font-weight:800; cursor:pointer; font-family:'Cairo'; }
 
+/* ── Dashboard Tabs ── */
+.dash-tabs { display:flex; gap:0; margin-bottom:0; border-bottom:2px solid var(--border); }
+.dash-tab { flex:1; padding:10px 6px; border:none; background:none; font-family:'Cairo'; font-size:12px; font-weight:700; color:var(--text-2); cursor:pointer; border-bottom:2.5px solid transparent; margin-bottom:-2px; transition:0.15s; }
+.dash-tab.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:900; }
+.dash-tab:hover:not(.active) { background:var(--bg); }
+.dash-tab-content { padding-top:14px; }
+
+/* ── Tab helpers ── */
+.tab-loading { text-align:center; padding:24px; color:var(--text-2); font-size:13px; }
+.tab-empty   { text-align:center; padding:24px; color:var(--text-2); font-size:13px; }
+
+/* ── Setup Screen ── */
+#setupScreen { display:none; min-height:100vh; align-items:center; justify-content:center; padding:20px; background:var(--primary); }
+
 /* ── Responsive desktop layout for cards ── */
 @media (min-width:681px) {
   .cb { display:grid; grid-template-columns:30% 38% 32%; direction:ltr; gap:0; }

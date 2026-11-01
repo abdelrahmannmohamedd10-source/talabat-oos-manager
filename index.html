@@ -3,296 +3,263 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="referrer" content="no-referrer">
-  <title>Talabat OOS – بوابة الفيدباك</title>
+  <title>OOS Manager – Talabat</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════════════
-     GLOBAL LOADER
-════════════════════════════════════════════════════ -->
+<!-- ══ LOADER ══ -->
 <div id="globalLoader">
-  <div style="font-size:52px; margin-bottom:12px;">🛒</div>
-  <div style="font-size:20px; font-weight:900; letter-spacing:1px;">TALABAT OOS</div>
-  <div id="loaderText" style="font-size:12px; margin-top:8px; opacity:0.85;"></div>
+  <div style="font-size:52px;margin-bottom:12px;">🛒</div>
+  <div style="font-size:20px;font-weight:900;letter-spacing:1px;">TALABAT OOS</div>
+  <div id="loaderText" style="font-size:12px;margin-top:8px;opacity:0.85;">جاري التحميل...</div>
   <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
 </div>
 
-<!-- ══════════════════════════════════════════════════
-     LOGIN SCREEN
-════════════════════════════════════════════════════ -->
+<!-- ══ FIRST-RUN SETUP ══ -->
+<div id="setupScreen" style="display:none;min-height:100vh;align-items:center;justify-content:center;padding:20px;background:var(--primary);">
+  <div class="login-card">
+    <div style="font-size:48px;margin-bottom:12px;">⚙️</div>
+    <h2 style="font-size:18px;font-weight:900;margin-bottom:6px;">إعداد أول مرة</h2>
+    <p style="font-size:12px;color:var(--text-2);margin-bottom:22px;">أنشئ حساب المدير الأول</p>
+    <div style="display:flex;flex-direction:column;gap:10px;text-align:right;">
+      <input type="text" id="setupName" placeholder="الاسم الكامل"
+        style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:13px;box-sizing:border-box;">
+      <input type="email" id="setupEmail" placeholder="الإيميل"
+        style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:13px;box-sizing:border-box;direction:ltr;text-align:left;">
+      <input type="password" id="setupPass" placeholder="الباسورد"
+        style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:13px;box-sizing:border-box;">
+      <div id="setupError" style="display:none;background:var(--error-bg);color:var(--error);border:1.5px solid var(--error);border-radius:var(--r-sm);padding:8px 12px;font-size:12px;font-weight:700;"></div>
+      <button onclick="createFirstAdmin()"
+        style="width:100%;padding:13px;background:var(--primary);color:white;border:none;border-radius:var(--r-sm);font-family:'Cairo';font-size:15px;font-weight:900;cursor:pointer;">
+        إنشاء الحساب
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOGIN SCREEN ══ -->
 <div id="loginScreen">
   <div class="login-card">
-    <div style="font-size:52px; margin-bottom:12px;">🛒</div>
-    <h1 style="font-size:22px; font-weight:900; margin-bottom:4px;">بوابة الفيدباك</h1>
-    <p style="font-size:12px; color:var(--text-2); margin-bottom:24px;">Talabat OOS Mapping</p>
-
+    <div style="font-size:52px;margin-bottom:12px;">🛒</div>
+    <h1 style="font-size:22px;font-weight:900;margin-bottom:4px;">OOS Manager</h1>
+    <p style="font-size:12px;color:var(--text-2);margin-bottom:24px;">Talabat OOS Feedback</p>
     <form onsubmit="handleLoginSubmit(event)">
       <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" required
-             style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:13px;margin-bottom:10px;direction:ltr;text-align:left;box-sizing:border-box;">
+        style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:13px;margin-bottom:10px;direction:ltr;text-align:left;box-sizing:border-box;">
       <input type="password" id="loginPassword" placeholder="كلمة المرور" required
-             style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:13px;margin-bottom:14px;direction:ltr;text-align:left;box-sizing:border-box;">
+        style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:13px;margin-bottom:14px;direction:ltr;text-align:left;box-sizing:border-box;">
       <button type="submit" id="loginBtn"
-              style="width:100%;padding:13px;background:var(--primary);color:white;border:none;border-radius:var(--r-sm);font-family:'Cairo';font-size:15px;font-weight:900;cursor:pointer;">
+        style="width:100%;padding:13px;background:var(--primary);color:white;border:none;border-radius:var(--r-sm);font-family:'Cairo';font-size:15px;font-weight:900;cursor:pointer;">
         دخول
       </button>
     </form>
-
     <div id="authErrorMsg"></div>
   </div>
 </div>
 
-<!-- Change Password Modal -->
+<!-- ══ CHANGE PASSWORD MODAL ══ -->
 <div id="changePassModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px);">
   <div style="background:white;border-radius:18px;padding:28px;width:100%;max-width:380px;box-shadow:0 10px 30px rgba(0,0,0,0.25);">
     <h3 style="font-weight:900;font-size:16px;margin-bottom:6px;text-align:center;">🔑 تغيير كلمة المرور</h3>
-    <p id="changePassNote" style="font-size:12px;color:var(--text-2);text-align:center;margin-bottom:20px;">أول مرة — غيّر كلمة المرور</p>
-    <label style="font-size:12px;font-weight:800;display:block;margin-bottom:5px;">كلمة المرور الحالية</label>
-    <input type="password" id="cpOld" placeholder="123456" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;margin-bottom:10px;direction:ltr;box-sizing:border-box;">
-    <label style="font-size:12px;font-weight:800;display:block;margin-bottom:5px;">كلمة المرور الجديدة</label>
-    <input type="password" id="cpNew" placeholder="6 أحرف على الأقل" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;margin-bottom:10px;direction:ltr;box-sizing:border-box;">
-    <label style="font-size:12px;font-weight:800;display:block;margin-bottom:5px;">تأكيد كلمة المرور الجديدة</label>
-    <input type="password" id="cpConfirm" placeholder="أعد الكتابة" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;margin-bottom:14px;direction:ltr;box-sizing:border-box;">
-    <div id="cpError" style="display:none;background:var(--error-bg);color:var(--error);border:1.5px solid var(--error);border-radius:var(--r-sm);padding:8px 12px;font-size:12px;font-weight:700;margin-bottom:12px;"></div>
-    <button onclick="submitChangePass()" style="width:100%;padding:12px;background:var(--primary);color:white;border:none;border-radius:var(--r-sm);font-family:'Cairo';font-size:14px;font-weight:900;cursor:pointer;margin-bottom:8px;">تغيير وحفظ</button>
-    <button onclick="skipChangePass()" id="cpSkipBtn" style="width:100%;padding:10px;background:var(--bg);color:var(--text-2);border:1px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;cursor:pointer;">تخطي الآن</button>
-  </div>
-</div>
-
-<!-- Users Management Modal -->
-<div id="usersModal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px);">
-  <div style="background:white;border-radius:18px;padding:24px;width:100%;max-width:760px;max-height:92vh;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,0.25);">
-    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px;">
-      <h3 style="font-weight:900;font-size:16px;">👤 إدارة المستخدمين</h3>
-      <button onclick="closeUsersModal()" style="border:none;background:var(--bg);padding:5px 12px;border-radius:var(--r-sm);font-weight:800;cursor:pointer;font-size:14px;">✕ إغلاق</button>
-    </div>
-    <div style="background:var(--bg);border-radius:var(--r-sm);padding:14px;margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
-      <div style="flex:2;min-width:160px;">
-        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">البريد الإلكتروني</label>
-        <input type="email" id="newUserEmail" placeholder="user@example.com" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;box-sizing:border-box;direction:ltr;">
-      </div>
-      <div style="flex:2;min-width:130px;">
-        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">الاسم</label>
-        <input type="text" id="newUserName" placeholder="اسم المستخدم" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;box-sizing:border-box;">
-      </div>
-      <div style="flex:1;min-width:100px;">
-        <label style="font-size:11px;font-weight:800;display:block;margin-bottom:4px;">الدور</label>
-        <select id="newUserRole" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;box-sizing:border-box;">
-          <option value="tchamp">موظف</option>
-          <option value="owner">مدير</option>
-        </select>
-      </div>
-      <button onclick="addNewUser()" style="padding:8px 18px;background:var(--primary);color:white;border:none;border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">+ إضافة</button>
-    </div>
-    <div style="overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-sm);">
-      <table style="width:100%;border-collapse:collapse;font-size:11px;text-align:right;">
-        <thead style="background:var(--bg);position:sticky;top:0;">
-          <tr>
-            <th style="padding:8px 10px;">البريد</th>
-            <th style="padding:8px;">الاسم</th>
-            <th style="padding:8px;">الدور</th>
-            <th style="padding:8px;">كلمة المرور</th>
-            <th style="padding:8px;"></th>
-          </tr>
-        </thead>
-        <tbody id="usersTbody"></tbody>
-      </table>
+    <p style="font-size:12px;color:var(--text-2);text-align:center;margin-bottom:20px;">أول مرة — غيّر كلمة المرور</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <input type="password" id="cpNew" placeholder="كلمة المرور الجديدة (6 أحرف على الأقل)"
+        style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;box-sizing:border-box;">
+      <input type="password" id="cpConfirm" placeholder="تأكيد كلمة المرور"
+        style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;box-sizing:border-box;">
+      <div id="cpError" style="display:none;background:var(--error-bg);color:var(--error);border:1.5px solid var(--error);border-radius:var(--r-sm);padding:8px 12px;font-size:12px;font-weight:700;"></div>
+      <button onclick="submitChangePass()"
+        style="width:100%;padding:12px;background:var(--primary);color:white;border:none;border-radius:var(--r-sm);font-family:'Cairo';font-size:14px;font-weight:900;cursor:pointer;">
+        تغيير وحفظ
+      </button>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════
-     APP SCREEN
-════════════════════════════════════════════════════ -->
+<!-- ══ APP SCREEN ══ -->
 <div id="appScreen">
 
-  <!-- ── Header ── -->
+  <!-- Header -->
   <header class="app-header">
     <div class="header-row">
       <div class="brand">
         <div class="brand-icon">T</div>
-        <div style="font-weight:900; font-size:14px;">OOS Feedback</div>
+        <div style="font-weight:900;font-size:14px;">OOS Manager</div>
       </div>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <button id="btnDashTrigger"     onclick="openAdminDashboardModal()" style="display:none;">📊 التحليلات</button>
-        <button id="btnAssignTrigger"   onclick="openAssignModal()"         style="display:none;">👥 التوزيع</button>
-        <button id="btnUsersTrigger"    onclick="openUsersModal()"          style="display:none;">👤 المستخدمين</button>
-        <button id="btnSummaryTrigger"  onclick="showBranchSummaryModal()"  style="display:none;">📋 ملخص</button>
-        <span id="headerName">-</span>
-        <button onclick="doLogout()" style="border:none; background:none; cursor:pointer; font-size:18px;" title="خروج">⬅️</button>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button id="btnDashTrigger" onclick="openDash()" style="display:none;">📊 Dashboard</button>
+        <span id="headerName" style="font-size:12px;font-weight:800;background:var(--primary-bg);color:var(--primary);padding:4px 10px;border-radius:var(--r-full);">-</span>
+        <button onclick="doLogout()" style="border:none;background:none;cursor:pointer;font-size:18px;" title="خروج">⬅️</button>
       </div>
     </div>
   </header>
 
-  <!-- ── Admin Filter Bar (المدراء فقط) ── -->
+  <!-- Admin Filter Bar -->
   <div id="adminFilterBar" class="admin-filter-bar">
-    <span style="font-size:12px; font-weight:800; white-space:nowrap;">👁️ عرض بيانات:</span>
-    <select id="adminUserSelect" class="admin-user-select" onchange="adminLoadSelected()">
-      <option value="__ALL__">— كل أعضاء الفريق —</option>
+    <span style="font-size:12px;font-weight:800;white-space:nowrap;">👁️ عرض بيانات:</span>
+    <select id="adminUserSelect" class="admin-user-select" onchange="onAdminUserChange()">
+      <option value="">— كل T-Champs —</option>
     </select>
-    <button onclick="loadData()"
-      style="padding:6px 14px; border:1px solid var(--primary); border-radius:var(--r-sm); background:var(--primary-bg); color:var(--primary); font-weight:800; cursor:pointer; font-size:12px; font-family:'Cairo';">
+    <button onclick="refreshOOS()"
+      style="padding:6px 14px;border:1px solid var(--primary);border-radius:var(--r-sm);background:var(--primary-bg);color:var(--primary);font-weight:800;cursor:pointer;font-size:12px;font-family:'Cairo';">
       🔄 تحديث
     </button>
   </div>
 
-  <!-- ── Branch Summary Bar ── -->
+  <!-- Branch Summary Bar -->
   <div class="branch-summary-bar">
     <div>
-      إجمالي: <span id="summaryTotalCount"   style="color:var(--primary-light); font-weight:900;">0</span>
+      إجمالي: <span id="summaryTotalCount" style="color:var(--primary-light);font-weight:900;">0</span>
       &nbsp;·&nbsp;
-      محدّث: <span id="summaryUpdatedCount"  style="color:var(--success); font-weight:900;">0</span>
+      محدّد: <span id="summaryUpdatedCount" style="color:var(--success);font-weight:900;">0</span>
       &nbsp;·&nbsp;
-      باقي: <span id="summaryRemainingCount" style="color:var(--warning); font-weight:900;">0</span>
+      باقي: <span id="summaryRemainingCount" style="color:var(--warning);font-weight:900;">0</span>
     </div>
-    <div id="branchStatusTag" class="branch-status-tag">PENDING ⏳</div>
+    <button id="btnSummaryTrigger" onclick="openSummaryModal()" style="display:none;">
+      📋 ملخص
+    </button>
   </div>
 
-  <!-- ── Filter Strip (4 فلاتر مترابطة) ── -->
+  <!-- Filter Strip -->
   <div class="filter-strip">
     <select id="fChainName" class="f-select" onchange="applyFilters()">
-      <option value="">كل Chain Name</option>
+      <option value="">كل Chain Names</option>
     </select>
     <select id="fChainId" class="f-select" onchange="applyFilters()">
-      <option value="">كل Chain ID</option>
+      <option value="">كل Chain IDs</option>
     </select>
-    <select id="fVendor" class="f-select" onchange="applyFilters()">
-      <option value="">كل الفروع</option>
-    </select>
-    <select id="fBranch" class="f-select" onchange="applyFilters()">
-      <option value="">كل Vendor IDs</option>
+    <select id="fStatus" class="f-select" onchange="applyFilters()">
+      <option value="">كل الحالات</option>
+      <option value="Not Found">Not Found</option>
+      <option value="Active">Active</option>
     </select>
     <button onclick="clearFilters()" class="btn-clear-filter">✕ مسح</button>
   </div>
 
-  <!-- ── Items List ── -->
+  <!-- Items -->
   <main class="items-wrap">
     <div id="itemsList" class="items-list"></div>
     <div id="emptyState">
       <div style="font-size:52px;">🎉</div>
-      <div style="font-size:16px; font-weight:800; margin-top:10px;">أحسنت! كل العناصر مكتملة</div>
-      <p style="font-size:12px; color:var(--text-2); margin-top:6px;">لا توجد نواقص معلقة بناءً على الفلترة الحالية.</p>
+      <div style="font-size:16px;font-weight:800;margin-top:10px;">لا توجد عناصر</div>
+      <p style="font-size:12px;color:var(--text-2);margin-top:6px;">لا توجد بيانات بناءً على الفلترة الحالية.</p>
     </div>
   </main>
 
-  <!-- ── Batch Bottom Bar ── -->
+  <!-- Bottom Batch Bar -->
   <div class="batch-bottom-bar">
-    <div style="font-size:12px; font-weight:700;">
-      مكتمل: <span id="batchCompletedCount" style="color:var(--primary); font-size:18px; font-weight:900;">0</span>
+    <div style="font-size:12px;font-weight:700;">
+      مكتمل: <span id="batchCompletedCount" style="color:var(--primary);font-size:18px;font-weight:900;">0</span>
       / <span id="batchTotalCount" style="font-size:14px;">0</span>
     </div>
-    <button class="btn-batch-submit" id="btnBatchSubmit" onclick="submitBatchTasks()" disabled>
-      🚀 إرسال الفيدباك المجمع
+    <button class="btn-batch-submit" id="btnBatchSubmit" onclick="submitBatch()" disabled>
+      🚀 إرسال الفيدباك
     </button>
   </div>
 
 </div><!-- end #appScreen -->
 
-<!-- ══════════════════════════════════════════════════
-     ADMIN DASHBOARD MODAL
-════════════════════════════════════════════════════ -->
+<!-- ══ ADMIN DASHBOARD MODAL (4 TABS) ══ -->
 <div id="adminDashboardModal">
   <div class="dash-box">
-
     <div class="dash-header">
-      <h3>👑 لوحة تحليلات المدير</h3>
-      <button onclick="closeAdminDashboardModal()">✕ إغلاق</button>
+      <h3>📊 لوحة التحكم</h3>
+      <button onclick="closeDash()">✕ إغلاق</button>
     </div>
 
-    <!-- KPIs -->
-    <div class="dash-grid">
-      <div class="dash-kpi">
-        <div style="font-size:24px; font-weight:900; color:var(--primary);"   id="dashKpiTotal">0</div>
-        <div style="font-size:10px; color:var(--text-2);">الإجمالي</div>
-      </div>
-      <div class="dash-kpi">
-        <div style="font-size:24px; font-weight:900; color:var(--warning);"   id="dashKpiPending">0</div>
-        <div style="font-size:10px; color:var(--text-2);">معلّق</div>
-      </div>
-      <div class="dash-kpi">
-        <div style="font-size:24px; font-weight:900; color:var(--success);"   id="dashKpiCompleted">0</div>
-        <div style="font-size:10px; color:var(--text-2);">مكتمل</div>
-      </div>
-      <div class="dash-kpi">
-        <div style="font-size:24px; font-weight:900; color:var(--info);"      id="dashKpiRate">0%</div>
-        <div style="font-size:10px; color:var(--text-2);">نسبة الإنجاز</div>
-      </div>
+    <!-- Tabs -->
+    <div class="dash-tabs">
+      <button class="dash-tab active" id="dtab-users"     onclick="switchDashTab('users')">👤 مستخدمين</button>
+      <button class="dash-tab"        id="dtab-feedback"  onclick="switchDashTab('feedback')">💬 فيدباك</button>
+      <button class="dash-tab"        id="dtab-summaries" onclick="switchDashTab('summaries')">📋 ملخصات</button>
+      <button class="dash-tab"        id="dtab-assign"    onclick="switchDashTab('assign')">🔀 توزيع</button>
     </div>
 
-    <!-- إحصائيات الفريق -->
-    <h4 style="font-weight:800; font-size:13px; margin-top:16px;">👥 إحصائيات الفريق</h4>
-    <div style="max-height:140px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--r-sm); margin-top:6px;">
-      <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:right;">
-        <thead style="background:var(--bg); position:sticky; top:0;">
-          <tr>
-            <th style="padding:5px 8px;">الموظف</th>
-            <th>معلّق</th>
-            <th>مكتمل</th>
-            <th>نسبة</th>
-          </tr>
-        </thead>
-        <tbody id="dashTeamBody"></tbody>
-      </table>
+    <!-- Tab: Users -->
+    <div id="dashTabUsers" class="dash-tab-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:13px;font-weight:800;">المستخدمين</span>
+        <button onclick="toggleAddUserForm()" id="btnToggleAddUser"
+          style="padding:6px 14px;background:var(--primary);color:white;border:none;border-radius:8px;font-family:'Cairo';font-size:12px;font-weight:800;cursor:pointer;">
+          + إضافة مستخدم
+        </button>
+      </div>
+      <div id="addUserForm" style="display:none;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <input id="nuName"  placeholder="الاسم"      style="padding:8px;border:1.5px solid var(--border);border-radius:8px;font-family:'Cairo';font-size:12px;box-sizing:border-box;">
+          <input id="nuEmail" type="email" placeholder="الإيميل" style="padding:8px;border:1.5px solid var(--border);border-radius:8px;font-family:'Cairo';font-size:12px;box-sizing:border-box;direction:ltr;text-align:left;">
+          <select id="nuRole" style="padding:8px;border:1.5px solid var(--border);border-radius:8px;font-family:'Cairo';font-size:12px;box-sizing:border-box;">
+            <option value="tchamp">T-Champ</option>
+            <option value="owner">Owner</option>
+            <option value="admin">Admin</option>
+          </select>
+          <input id="nuPass" type="password" placeholder="الباسورد" style="padding:8px;border:1.5px solid var(--border);border-radius:8px;font-family:'Cairo';font-size:12px;box-sizing:border-box;">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="saveNewUser()"
+            style="flex:1;padding:8px;background:var(--primary);color:white;border:none;border-radius:8px;font-family:'Cairo';font-size:12px;font-weight:800;cursor:pointer;">
+            حفظ
+          </button>
+          <button onclick="toggleAddUserForm()"
+            style="padding:8px 14px;border:1px solid var(--border);background:white;border-radius:8px;font-family:'Cairo';font-size:12px;cursor:pointer;">
+            إلغاء
+          </button>
+        </div>
+      </div>
+      <div id="usersTable"><div class="tab-loading">جاري التحميل...</div></div>
     </div>
 
-    <!-- آخر الإجراءات -->
-    <h4 style="font-weight:800; font-size:13px; margin-top:16px;">🕒 آخر الإجراءات (50)</h4>
-    <div style="max-height:170px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--r-sm); margin-top:6px;">
-      <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:right;">
-        <thead style="background:var(--bg); position:sticky; top:0;">
-          <tr>
-            <th style="padding:5px 8px;">الوقت</th>
-            <th>الموظف</th>
-            <th>المنتج</th>
-            <th>الإجراء / القيمة</th>
-          </tr>
-        </thead>
-        <tbody id="dashAuditBody"></tbody>
-      </table>
+    <!-- Tab: Feedback -->
+    <div id="dashTabFeedback" class="dash-tab-content" style="display:none;">
+      <div id="feedbackList"><div class="tab-loading">جاري التحميل...</div></div>
     </div>
 
-    <!-- سجل الحضور -->
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:16px; margin-bottom:0;">
-      <h4 style="font-weight:800; font-size:13px;">📸 سجل الحضور (آخر 20)</h4>
-      <button onclick="refreshLoginLogs()" id="btnRefreshLogins"
-        style="background:var(--primary-bg);color:var(--primary);border:1.5px solid var(--primary);border-radius:20px;padding:4px 12px;font-family:'Cairo';font-size:11px;font-weight:800;cursor:pointer;">
-        🔄 تحديث
-      </button>
+    <!-- Tab: Summaries -->
+    <div id="dashTabSummaries" class="dash-tab-content" style="display:none;">
+      <div id="summariesList"><div class="tab-loading">جاري التحميل...</div></div>
     </div>
-    <div style="max-height:170px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--r-sm); margin-top:6px;">
-      <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:right;">
-        <thead style="background:var(--bg); position:sticky; top:0;">
-          <tr>
-            <th style="padding:5px 8px;">الوقت</th>
-            <th>الموظف</th>
-            <th>الموقع</th>
-          </tr>
-        </thead>
-        <tbody id="dashLoginBody"></tbody>
-      </table>
+
+    <!-- Tab: Assign -->
+    <div id="dashTabAssign" class="dash-tab-content" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:13px;font-weight:800;">توزيع الشينز على T-Champs</span>
+        <button onclick="saveAssignments()" id="btnSaveAssign"
+          style="padding:6px 16px;background:#7C3AED;color:white;border:none;border-radius:8px;font-family:'Cairo';font-size:12px;font-weight:800;cursor:pointer;">
+          💾 حفظ التوزيع
+        </button>
+      </div>
+      <div style="margin-bottom:10px;">
+        <input id="assignSearch" type="text" placeholder="🔍 بحث عن شين..."
+          oninput="filterAssignTable()"
+          style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Cairo';font-size:12px;box-sizing:border-box;">
+      </div>
+      <div id="assignTable"><div class="tab-loading">جاري التحميل...</div></div>
     </div>
 
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════
-     BRANCH SUMMARY MODAL
-════════════════════════════════════════════════════ -->
-<div id="branchSummaryModal" style="display:none">
+<!-- ══ BRANCH SUMMARY MODAL ══ -->
+<div id="branchSummaryModal">
   <div class="sum-box">
-
     <div class="dash-header">
       <h3>📋 ملخص الزيارة</h3>
-      <button onclick="closeBranchSummaryModal()">✕ إغلاق</button>
+      <button onclick="closeSummaryModal()">✕ إغلاق</button>
     </div>
-
-    <div style="display:flex; flex-direction:column; gap:12px;">
-
+    <div style="display:flex;flex-direction:column;gap:12px;">
       <div>
-        <label class="sum-label">🎯 هدف الزيارة</label>
-        <select id="sumVisitObjective" class="sum-input">
+        <label class="sum-label">عدد المنتجات Not Found</label>
+        <input type="number" id="sumNotFound" class="sum-input" min="0" value="0">
+      </div>
+      <div>
+        <label class="sum-label">عدد المنتجات Found / تم تسويتها</label>
+        <input type="number" id="sumFound" class="sum-input" min="0" value="0">
+      </div>
+      <div>
+        <label class="sum-label">هدف الزيارة</label>
+        <select id="sumObjective" class="sum-input">
           <option value="">— اختر —</option>
           <option>مراجعة المخزون</option>
           <option>متابعة نواقص</option>
@@ -301,108 +268,24 @@
           <option>أخرى</option>
         </select>
       </div>
-
       <div>
-        <label class="sum-label">📋 إدارة القائمة</label>
-        <select id="sumMenuManagement" class="sum-input">
-          <option value="">— اختر —</option>
-          <option>مكتملة</option>
-          <option>جزئية</option>
-          <option>غير مكتملة</option>
-        </select>
+        <label class="sum-label">ملاحظات</label>
+        <textarea id="sumNotes" class="sum-input" rows="3" placeholder="أي ملاحظات..."></textarea>
       </div>
-
-      <div style="display:flex; gap:10px;">
-        <div style="flex:1;">
-          <label class="sum-label">👥 موظفين/شيفت</label>
-          <input type="number" id="sumEmpPerShift" class="sum-input" placeholder="0" min="0">
-        </div>
-        <div style="flex:1;">
-          <label class="sum-label">🛵 رايدرز/شيفت</label>
-          <input type="number" id="sumRiderPerShift" class="sum-input" placeholder="0" min="0">
-        </div>
-      </div>
-
-      <div>
-        <label class="sum-label">🔖 Order ID (اختياري)</label>
-        <input type="text" id="sumOrderId" class="sum-input" placeholder="رقم الطلب لو موجود">
-      </div>
-
-      <div>
-        <label class="sum-label">📝 خطة الإجراءات</label>
-        <textarea id="sumActionsplan" class="sum-input" rows="3" placeholder="الإجراءات اللي اتعملت..."></textarea>
-      </div>
-
-      <div>
-        <label class="sum-label">⚠️ مشاكل الفيندور</label>
-        <textarea id="sumVendorIssue" class="sum-input" rows="2" placeholder="أي مشاكل لاحظتها..."></textarea>
-      </div>
-
+      <button onclick="submitSummary()"
+        style="width:100%;padding:13px;background:var(--primary);color:white;border:none;border-radius:var(--r-sm);font-family:'Cairo';font-size:15px;font-weight:900;cursor:pointer;">
+        📤 إرسال الملخص
+      </button>
     </div>
-
-    <button id="btnSubmitSummary" onclick="doSubmitBranchSummary()"
-      style="width:100%; margin-top:18px; padding:13px; background:var(--primary); color:white; border:none; border-radius:var(--r-sm); font-family:'Cairo'; font-size:15px; font-weight:900; cursor:pointer;">
-      📤 إرسال ملخص الزيارة
-    </button>
-
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════
-     ASSIGN MODAL
-════════════════════════════════════════════════════ -->
-<div id="assignModal">
-  <div class="assign-box">
-
-    <div class="dash-header">
-      <h3>👥 توزيع المهام على الفريق</h3>
-      <button onclick="closeAssignModal()">✕ إغلاق</button>
-    </div>
-
-    <!-- فلتر بحث -->
-    <div style="margin-bottom:12px;">
-      <input id="assignSearch" type="text" placeholder="🔍 ابحث عن Chain Name أو ID..."
-        oninput="filterAssignRows()"
-        style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:12px;">
-    </div>
-
-    <!-- إحصائيات التوزيع -->
-    <div id="assignStats" style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;"></div>
-
-    <!-- جدول التوزيع -->
-    <div style="max-height:380px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);">
-      <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:right;">
-        <thead style="background:var(--bg);position:sticky;top:0;z-index:1;">
-          <tr>
-            <th style="padding:8px 10px;">Chain Name</th>
-            <th style="padding:8px 6px;">Chain ID</th>
-            <th style="padding:8px 6px;color:var(--primary);">T-Champ الحالي</th>
-            <th style="padding:8px 6px;">تغيير إلى</th>
-          </tr>
-        </thead>
-        <tbody id="assignTableBody"></tbody>
-      </table>
-    </div>
-
-    <div style="display:flex;gap:10px;margin-top:16px;">
-      <button id="btnSaveAssign" onclick="saveAssignments()"
-        style="flex:1;padding:13px;background:var(--primary);color:white;border:none;border-radius:var(--r-sm);font-family:'Cairo';font-size:14px;font-weight:900;cursor:pointer;">
-        💾 حفظ التوزيع
-      </button>
-      <button onclick="closeAssignModal()"
-        style="padding:13px 20px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);font-family:'Cairo';font-size:13px;font-weight:700;cursor:pointer;">
-        إلغاء
-      </button>
-    </div>
-
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════════
-     TOASTS
-════════════════════════════════════════════════════ -->
+<!-- ══ TOASTS ══ -->
 <div id="toastWrap"></div>
 
+<!-- Firebase SDKs (compat v9) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="main.js"></script>
 </body>
 </html>
