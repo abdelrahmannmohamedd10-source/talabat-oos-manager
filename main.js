@@ -96,15 +96,10 @@ function gvizRows(table) {
   return table.rows.map(r =>
     (r.c || []).map(c => {
       if (!c || c.v == null) return '';
-      // GViz date format: "Date(yyyy,m,d)" where m is 0-indexed
+      // GViz date columns return "Date(yyyy,m,d)" where m is 0-indexed
       if (typeof c.v === 'string' && c.v.startsWith('Date(')) {
         const m = c.v.match(/Date\((\d+),(\d+),(\d+)\)/);
         if (m) return new Date(+m[1], +m[2], +m[3]);
-      }
-      // Fallback: use formatted display string if available and looks like a date
-      if (c.f && typeof c.f === 'string') {
-        const d = new Date(c.f);
-        if (!isNaN(d) && d.getFullYear() > 1971) return d;
       }
       return c.v;
     })
@@ -397,7 +392,7 @@ function renderItems() {
     return `
       <div class="icard" style="border-color:${sel ? 'var(--primary)' : 'transparent'}">
         <div class="ch">
-          <span class="ch-date">${fmtDate(item.date)} · ${item.branchId}</span>
+          <span class="ch-date">${item.vendor} · ${fmtDate(item.date)}</span>
           <span class="ch-badge" style="background:${statusBg};color:${statusColor}">${item.status}</span>
         </div>
         <div class="cb">
@@ -406,7 +401,8 @@ function renderItems() {
           <div class="cb-info">
             <div class="cb-chain-badge">${item.chainName} · ${item.chainId}</div>
             <div class="cb-item-name">${item.itemName}</div>
-            <div class="cb-sku">SKU: ${item.sku} | Order: ${item.orderId}</div>
+            ${item.itemNameEn && item.itemNameEn !== item.itemName ? `<div class="cb-sku" style="font-size:11px;color:var(--text-2);margin-bottom:4px">${item.itemNameEn}</div>` : ''}
+            <div class="cb-sku">SKU: ${item.sku} | Branch: ${item.branchId} | Order: ${item.orderId}</div>
           </div>
         </div>
         ${noteHtml}
