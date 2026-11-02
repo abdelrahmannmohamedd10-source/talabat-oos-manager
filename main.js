@@ -319,12 +319,14 @@ async function onAdminUserChange() {
 function rebuildFilters() {
   const chainNames = [...new Set(S.items.map(i => i.chainName).filter(Boolean))].sort();
   const chainIds   = [...new Set(S.items.map(i => i.chainId).filter(Boolean))].sort();
+  const vendors    = [...new Set(S.items.map(i => i.vendor).filter(Boolean))].sort();
+  const branchIds  = [...new Set(S.items.map(i => i.branchId).filter(Boolean))].sort();
   const dates      = [...new Set(S.items.map(i => i.dateStr).filter(Boolean))].sort().reverse();
-  const s1 = document.getElementById('fChainName');
-  const s2 = document.getElementById('fChainId');
+  document.getElementById('fChainName').innerHTML = '<option value="">كل Chain Names</option>' + chainNames.map(v => `<option value="${v}">${v}</option>`).join('');
+  document.getElementById('fChainId').innerHTML   = '<option value="">كل Chain IDs</option>'   + chainIds.map(v => `<option value="${v}">${v}</option>`).join('');
+  document.getElementById('fVendor').innerHTML    = '<option value="">كل الفروع</option>'       + vendors.map(v => `<option value="${v}">${v}</option>`).join('');
+  document.getElementById('fBranchId').innerHTML  = '<option value="">كل كود الفرع</option>'   + branchIds.map(v => `<option value="${v}">${v}</option>`).join('');
   const s3 = document.getElementById('fDate');
-  s1.innerHTML = '<option value="">كل Chain Names</option>' + chainNames.map(v => `<option value="${v}">${v}</option>`).join('');
-  s2.innerHTML = '<option value="">كل Chain IDs</option>'   + chainIds.map(v => `<option value="${v}">${v}</option>`).join('');
   if (s3) {
     const todayK = today();
     s3.innerHTML = '<option value="">كل التواريخ</option>' + dates.map(v => `<option value="${v}" ${v===todayK?'selected':''}>${v}</option>`).join('');
@@ -334,11 +336,15 @@ function rebuildFilters() {
 function applyFilters() {
   const cn = document.getElementById('fChainName').value;
   const ci = document.getElementById('fChainId').value;
+  const vn = document.getElementById('fVendor').value;
+  const bi = document.getElementById('fBranchId').value;
   const st = document.getElementById('fStatus').value;
   const dt = document.getElementById('fDate') ? document.getElementById('fDate').value : '';
   S.filtered = S.items.filter(i =>
     (!cn || i.chainName === cn) &&
     (!ci || i.chainId   === ci) &&
+    (!vn || i.vendor    === vn) &&
+    (!bi || i.branchId  === bi) &&
     (!st || i.status    === st) &&
     (!dt || i.dateStr   === dt)
   );
@@ -346,7 +352,7 @@ function applyFilters() {
 }
 
 function clearFilters() {
-  ['fChainName','fChainId','fStatus','fDate'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['fChainName','fChainId','fVendor','fBranchId','fStatus','fDate'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   applyFilters();
 }
 
